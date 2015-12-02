@@ -4,58 +4,70 @@ var sqlite3 = require("sqlite3").verbose();
 
 /**
  * This function will translate the raw xml into blocks of C initialisation code that will be built into the actual target binary.
+ * @param {function} callback(translated) - Callback function giving back the translated C code.
  */
-translate = function(){
-	
-	var xml;
-	xml=fs.readFileSync("/home/mogyula/devel/dabox/test.xml", "utf8");
+translate = function(callback){
+	var i, j;
+	var xml=fs.readFileSync("/home/mogyula/devel/dabox/test.xml", "utf8");
 	var json = JSON.parse(parser.toJson(xml, {arrayNotation:true})); //Gotta get everything as array, so it'll be easier to walk the JSON tree.
-	//console.dir(json.xml.device.length);
 	
 	//TODO: While walking the xml, pay attention, that only given blocks can be embedded into each other (e.g. system-device-trigger()args-listener()args...)
+	//TODO: Throw an error when a trigger was used instead of a listener and vice versa.
 	//probably have to check the parent node.
 	for (var i in json.system[0].device){
 		for (var j in json.system[0].device[i].trigger){
-			if (json.system[0].device[i].trigger[j].arg){ //check if any trigger args have been given
-				//if so, sort them
-				//console.log(json.system[0].device[i].trigger[j].arg[0].$t);
-				sortArgs(
-					json.system[0].device[i].type,
-					json.system[0].device[i].trigger[j].name,
-					json.system[0].device[i].trigger[j].arg,
-					function(arg_array){
-						
-						console.log(arg_array);
+			sortArgs(
+				json.system[0].device[i].type,
+				json.system[0].device[i].trigger[j].name,
+				json.system[0].device[i].trigger[j].arg,
+				i,j,null,null, //passing these, so the async callback function will get them
+				function(trigger_arg_array, i, j){
+					for (var k in json.system[0].device[i].trigger[j].device){
+						for (var l in json.system[0].device[i].trigger[j].device[k].listener){
+							sortArgs(
+							json.system[0].device[i].trigger[j].device[k].type,
+							json.system[0].device[i].trigger[j].device[k].listener[l].name,
+							json.system[0].device[i].trigger[j].device[k].listener[l].arg,
+							i,j,k,l,
+							function(listener_arg_array, i, j, k, l){
+								//here we can assemble the whole stuff
+								var trig_com=json.system[0].device[i].id+"//"+
+								json.system[0].device[i].type+"//"+
+								json.system[0].device[i].trigger[j].name+"//"+
+								trigger_arg_array.join("//")+"   "+
+								json.system[0].device[i].trigger[j].device[k].id+"//"+
+								json.system[0].device[i].trigger[j].device[k].type+"//"+
+								json.system[0].device[i].trigger[j].device[k].listener[l].name+"//"+
+								listener_arg_array.join("//");
+								
+								console.log(trig_com);
+							}
+							);
+						}
 					}
-				);
-			}
-			//if (!json.system.device[i].trigger[j].arg){
-			//console.log("defined");
-			//}
+					return;
+				}
+			);
 		}
 	}
-	
-	//initialisation code
-	//running code
-	//
-	
-	/*db.serialize(function(){
-		db.each("SELECT name FROM type_id", function(err, row){
-			console.log(row.name);
-		});
-	});*/
+	return;
 };
 module.exports.translate=translate; //So it can be accessed from other source files.
 
 /**
  * This function will sort the arguments givenen in the xml for triggers/listeners in a way, that the actual devices will be able to receive them in the right order at initialisation phase.
- *@param {string} device_type - The name of the device which trigger/listens to the function.
- *@param {string} func_name - The name of the trigger/listener function. 
- *@param {string[]} args - The arguments to short.
- *@param {function} callback(arg_array) - Callback function giving back the sorted argument string array.
+ * @param {string} device_type - The name of the device which trigger/listens to the function.
+ * @param {string} func_name - The name of the trigger/listener function. 
+ * @param {string[]} args - The arguments to short.
+ * @param {function} callback(arg_array) - Callback function giving back the sorted argument string array.
  */
-sortArgs = function(device_type, func_name, args, callback){
+sortArgs = function(device_type, func_name, args, index_i, index_j, index_k, index_l, callback){
 	var db = new sqlite3.Database("/home/mogyula/devel/dabox/id.db",sqlite3.OPEN_READONLY); //Open our database.
+	
+	if(!args){
+		callback([""], index_i, index_j, index_k, index_l); //Return this if no arguments were given.
+		return;
+	}
 	
 	db.all("SELECT"+
 	" type_id.name AS type_name,"+
@@ -83,8 +95,10 @@ sortArgs = function(device_type, func_name, args, callback){
 				}
 			}
 		}
-		callback(_arg_array);	
-	});	
+		callback(_arg_array, index_i, index_j, index_k, index_l);
+		return;
+	});
+	return;
 }
 	
 

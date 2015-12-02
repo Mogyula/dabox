@@ -1,3 +1,5 @@
 var translator = require('./translator');
 
-translator.translate();
+translator.translate(function(translated){
+		//console.log(translated);
+	});
