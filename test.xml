@@ -5,7 +5,7 @@
 			<arg name="max_temp">30</arg>
 			<device type="coffee_machine" id="00:00:00:01">
 				<listener name="brew_espresso">
-					<arg name="with_milk">no</arg
+					<arg name="with_milk">no</arg>
 				</listener>
 			</device>
 		</trigger>

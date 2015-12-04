@@ -14,8 +14,18 @@ var sqlite3 = require("sqlite3").verbose();
  */
 translate = function(callback){
 	//TODO: rewrite this, so that an xml string can be passed!
-	var xml=fs.readFileSync("/home/mogyula/devel/dabox/test.xml", "utf8");
-	var json = JSON.parse(parser.toJson(xml, {arrayNotation:true})); //Gotta get everything as array, so it'll be easier to walk the JSON tree.
+	try{
+		var xml=fs.readFileSync("/home/mogyula/devel/dabox/test.xml", "utf8");
+		var json = JSON.parse(parser.toJson(xml, {arrayNotation:true})); //Gotta get everything as array, so it'll be easier to walk the JSON tree.
+	}catch(err){
+		callback(err, null);
+		return;
+	}
+	
+	checkSyntax(json, function(err){
+		callback(err, null);
+		return;
+	});
 	
 	//console.log(checkSyntax(json));
 	
@@ -125,13 +135,14 @@ module.exports.translate=translate; //So it can be accessed from other source fi
  * @param {function} callback(arg_array) - Callback function giving back the sorted argument string array.
  */
 sortArgs = function(device_type, func_name, args, index_i, index_j, index_k, index_l, callback){
-	var _db = new sqlite3.Database("/home/mogyula/devel/dabox/id.db",sqlite3.OPEN_READONLY); //Open our database.
 	
 	if(!args){
 		callback([""], index_i, index_j, index_k, index_l); //Return this if no arguments were given.
 		return;
 	}
 	
+	var _db = new sqlite3.Database("/home/mogyula/devel/dabox/id.db",sqlite3.OPEN_READONLY); //Open our database.
+			
 	_db.all("SELECT"+
 	" type_id.name AS type_name,"+
 	" func_id.arg_cnt AS arg_cnt,"+
@@ -207,123 +218,129 @@ getListenerCount = function(json){
 	return _listenerCount;
 }
 
-checkSyntax = function(json){
+checkSyntax = function(json, callback){
 	var errorMsg="Error while translating XML: "
 	var children;
 
 //TODO: check everywhere if the strings are empty or something
 //TODO: check everywhere, that the given number of args were given
 	
-	//only one <system> can exist.
-	if (Object.keys(json).length!=1 || Object.keys(json)[0]!="system"){
-		return errorMsg+"only a single <system>...</system> block should exist at the top level!\n";
-	}
-	
-	for(children in Object.keys(json.system[0])){
-		if (Object.keys(json.system[0])[children]!="device"){
-			return errorMsg+"the <system> block should only contain one or more <device> blocks!\n";
+	try{
+		//only one <system> can exist.
+		if (Object.keys(json).length!=1 || Object.keys(json)[0]!="system"){
+			throw errorMsg+"only a single <system>...</system> block should exist at the top level!\n";
 		}
-	}
+		
+		for(children in Object.keys(json.system[0])){
+			if (Object.keys(json.system[0])[children]!="device"){
+				throw errorMsg+"the <system> block should only contain one or more <device> blocks!\n";
+			}
+		}
 
-	for (var i in json.system[0].device){
-		
-		if (Object.keys(json.system[0].device[i]).slice(0,2).indexOf("type") != 0 &&
-			Object.keys(json.system[0].device[i]).slice(0,2).indexOf("id") != 0
-			){
-			return errorMsg+"the <device> blocks must have one \"type\", and one \"id\" property defined!\n\tIn: system.device:"+json.system[0].device[i]+"\n";
-		}
-		
-		for(children=2; children<Object.keys(json.system[0].device[i]).length; children++){
-			if (Object.keys(json.system[0].device[i])[children]!="trigger"){
-				return errorMsg+"the outer <device> block should only contain one or more <trigger> blocks!\n\tIn: system.device:"+json.system[0].device[i].type+"\n";
-			}
-		}
-		
-		for (var j in json.system[0].device[i].trigger){
+		for (var i in json.system[0].device){
 			
-			
-			if(Object.keys(json.system[0].device[i].trigger[j])[0]!="name"){
-				return errorMsg+"the <trigger> block should have one \"name\" property defined!\n\tIn: system.device:"+json.system[0].device[i].type+"\n";
+			if (Object.keys(json.system[0].device[i]).slice(0,2).indexOf("type") != 0 &&
+				Object.keys(json.system[0].device[i]).slice(0,2).indexOf("id") != 0
+				){
+				throw errorMsg+"the <device> blocks must have one \"type\", and one \"id\" property defined!\n\tIn: system.device:"+json.system[0].device[i]+"\n";
 			}
 			
-			for(children=1 ;children<Object.keys(json.system[0].device[i].trigger[j]).length;children++){
-				
-				if(Object.keys(json.system[0].device[i].trigger[j]).indexOf("device")==0){
-					return errorMsg+"the <trigger> block should contain at least one <device> block!\n\tIn: system.device:"+json.system[0].device[i].type+".trigger:"+json.system[0].device[i].trigger[j].name+"\n";
-				}
-				
-				if (Object.keys(json.system[0].device[i].trigger[j])[children]!="arg" &&
-				Object.keys(json.system[0].device[i].trigger[j])[children]!="device"){
-					return errorMsg+"the <trigger> block should only contain <arg> and <device> blocks!\ntIn: system.device:"+json.system[0].device[i].type+".trigger:"+json.system[0].device[i].trigger[j].name+"\n";
+			for(children=2; children<Object.keys(json.system[0].device[i]).length; children++){
+				if (Object.keys(json.system[0].device[i])[children]!="trigger"){
+					throw errorMsg+"the outer <device> block should only contain one or more <trigger> blocks!\n\tIn: system.device:"+json.system[0].device[i].type+"\n";
 				}
 			}
 			
-			for (children in json.system[0].device[i].trigger[j].arg){
+			for (var j in json.system[0].device[i].trigger){
 				
-				if (Object.keys(json.system[0].device[i].trigger[j].arg[children]).indexOf("name")==-1){
-					return errorMsg+"the <arg> blocks must have a \"name\" property defined!\ntIn: system.device:"+json.system[0].device[i].type+".trigger:"+json.system[0].device[i].trigger[j].name+"\n";
+				
+				if(Object.keys(json.system[0].device[i].trigger[j])[0]!="name"){
+					throw errorMsg+"the <trigger> block should have one \"name\" property defined!\n\tIn: system.device:"+json.system[0].device[i].type+"\n";
 				}
 				
-				if (Object.keys(json.system[0].device[i].trigger[j].arg[children]).indexOf("$t")==-1){
-					return errorMsg+"the <arg> blocks must have a defined value!\ntIn: system.device:"+json.system[0].device[i].type+".trigger:"+json.system[0].device[i].trigger[j].name+".arg:"+json.system[0].device[i].trigger[j].arg[children]+"\n";
-				}
-			}
-			
-			for (var k in json.system[0].device[i].trigger[j].device){
-				
-				if (Object.keys(json.system[0].device[i].trigger[j].device[k]).slice(0,2).indexOf("type") != 0 &&
-					Object.keys(json.system[0].device[i].trigger[j].device[k]).slice(0,2).indexOf("id") != 0){
-					return errorMsg+"the <device> blocks must have one \"type\", and one \"id\" property defined!\n\tIn: system.device:"+json.system[0].device[i]+"\n";
-				}
-				
-				for(children=2; children<Object.keys(json.system[0].device[i].trigger[j].device[k]).length;children++){
-					if(Object.keys(json.system[0].device[i].trigger[j].device[k])[children]!="listener"){
-						return errorMsg+"the inner <device> block should only contain <listener> blocks\n\tIn: system.device:"+json.system[0].device[i].type+".trigger:"+json.system[0].device[i].trigger[j].name+".device:"+json.system[0].device[i].trigger[j].device[k].type+"\n";
+				for(children=1 ;children<Object.keys(json.system[0].device[i].trigger[j]).length;children++){
+					
+					if(Object.keys(json.system[0].device[i].trigger[j]).indexOf("device")==0){
+						throw errorMsg+"the <trigger> block should contain at least one <device> block!\n\tIn: system.device:"+json.system[0].device[i].type+".trigger:"+json.system[0].device[i].trigger[j].name+"\n";
+					}
+					
+					if (Object.keys(json.system[0].device[i].trigger[j])[children]!="arg" &&
+					Object.keys(json.system[0].device[i].trigger[j])[children]!="device"){
+						throw errorMsg+"the <trigger> block should only contain <arg> and <device> blocks!\ntIn: system.device:"+json.system[0].device[i].type+".trigger:"+json.system[0].device[i].trigger[j].name+"\n";
 					}
 				}
 				
-				for (var l in json.system[0].device[i].trigger[j].device[k].listener){
+				for (children in json.system[0].device[i].trigger[j].arg){
 					
-					if(Object.keys(json.system[0].device[i].trigger[j].device[k].listener[l])[0]!="name"){
-						return "the <listener> block should have one \"name\" property defined!\n\tIn: "+
-						"system.device:"+json.system[0].device[i].type+
-						".trigger:"+json.system[0].device[i].trigger[j].name+
-						".device:"+json.system[0].device[i].trigger[j].device[k].type+
-						".listener:"+json.system[0].device[i].trigger[j].device[k].listener[l].name+"\n";
+					if (Object.keys(json.system[0].device[i].trigger[j].arg[children]).indexOf("name")==-1){
+						throw errorMsg+"the <arg> blocks must have a \"name\" property defined!\ntIn: system.device:"+json.system[0].device[i].type+".trigger:"+json.system[0].device[i].trigger[j].name+"\n";
 					}
 					
-					for(children=1; children<Object.keys(json.system[0].device[i].trigger[j].device[k].listener[l]).length; children++){
-						if(Object.keys(json.system[0].device[i].trigger[j].device[k].listener[l])[children]!="arg"){
-							return "the <listener> block should only contain <arg> blocks!\n\tIn: "+
-							"system.device:"+json.system[0].device[i].type+
-							".trigger:"+json.system[0].device[i].trigger[j].name+
-							".device:"+json.system[0].device[i].trigger[j].device[k].type+
-							".listener:"+json.system[0].device[i].trigger[j].device[k].listener[l].name+"\n";
+					if (Object.keys(json.system[0].device[i].trigger[j].arg[children]).indexOf("$t")==-1){
+						throw errorMsg+"the <arg> blocks must have a defined value!\ntIn: system.device:"+json.system[0].device[i].type+".trigger:"+json.system[0].device[i].trigger[j].name+".arg:"+json.system[0].device[i].trigger[j].arg[children]+"\n";
+					}
+				}
+				
+				for (var k in json.system[0].device[i].trigger[j].device){
+					
+					if (Object.keys(json.system[0].device[i].trigger[j].device[k]).slice(0,2).indexOf("type") != 0 &&
+						Object.keys(json.system[0].device[i].trigger[j].device[k]).slice(0,2).indexOf("id") != 0){
+						throw errorMsg+"the <device> blocks must have one \"type\", and one \"id\" property defined!\n\tIn: system.device:"+json.system[0].device[i]+"\n";
+					}
+					
+					for(children=2; children<Object.keys(json.system[0].device[i].trigger[j].device[k]).length;children++){
+						if(Object.keys(json.system[0].device[i].trigger[j].device[k])[children]!="listener"){
+							throw errorMsg+"the inner <device> block should only contain <listener> blocks\n\tIn: system.device:"+json.system[0].device[i].type+".trigger:"+json.system[0].device[i].trigger[j].name+".device:"+json.system[0].device[i].trigger[j].device[k].type+"\n";
 						}
 					}
 					
-					for (children in json.system[0].device[i].trigger[j].device[k].listener[l].arg){
+					for (var l in json.system[0].device[i].trigger[j].device[k].listener){
 						
-						if (Object.keys(json.system[0].device[i].trigger[j].device[k].listener[l].arg[children]).indexOf("name")==-1){
-							return errorMsg+"the <arg> blocks must have a \"name\" property defined!\ntIn: "+
+						if(Object.keys(json.system[0].device[i].trigger[j].device[k].listener[l])[0]!="name"){
+							throw "the <listener> block should have one \"name\" property defined!\n\tIn: "+
 							"system.device:"+json.system[0].device[i].type+
 							".trigger:"+json.system[0].device[i].trigger[j].name+
 							".device:"+json.system[0].device[i].trigger[j].device[k].type+
 							".listener:"+json.system[0].device[i].trigger[j].device[k].listener[l].name+"\n";
 						}
-				
-						if (Object.keys(json.system[0].device[i].trigger[j].device[k].listener[l].arg[children]).indexOf("$t")==-1){
-							return errorMsg+"the <arg> blocks must have a defined value!\ntIn: "+
-							"system.device:"+json.system[0].device[i].type+
-							".trigger:"+json.system[0].device[i].trigger[j].name+
-							".device:"+json.system[0].device[i].trigger[j].device[k].type+
-							".listener:"+json.system[0].device[i].trigger[j].device[k].listener[l].name+
-							".arg:"+json.system[0].device[i].trigger[j].device[k].listener[l].arg[children].name+"\n";
+						
+						for(children=1; children<Object.keys(json.system[0].device[i].trigger[j].device[k].listener[l]).length; children++){
+							if(Object.keys(json.system[0].device[i].trigger[j].device[k].listener[l])[children]!="arg"){
+								throw "the <listener> block should only contain <arg> blocks!\n\tIn: "+
+								"system.device:"+json.system[0].device[i].type+
+								".trigger:"+json.system[0].device[i].trigger[j].name+
+								".device:"+json.system[0].device[i].trigger[j].device[k].type+
+								".listener:"+json.system[0].device[i].trigger[j].device[k].listener[l].name+"\n";
+							}
+						}
+						
+						for (children in json.system[0].device[i].trigger[j].device[k].listener[l].arg){
+							
+							if (Object.keys(json.system[0].device[i].trigger[j].device[k].listener[l].arg[children]).indexOf("name")==-1){
+								throw errorMsg+"the <arg> blocks must have a \"name\" property defined!\ntIn: "+
+								"system.device:"+json.system[0].device[i].type+
+								".trigger:"+json.system[0].device[i].trigger[j].name+
+								".device:"+json.system[0].device[i].trigger[j].device[k].type+
+								".listener:"+json.system[0].device[i].trigger[j].device[k].listener[l].name+"\n";
+							}
+					
+							if (Object.keys(json.system[0].device[i].trigger[j].device[k].listener[l].arg[children]).indexOf("$t")==-1){
+								throw errorMsg+"the <arg> blocks must have a defined value!\ntIn: "+
+								"system.device:"+json.system[0].device[i].type+
+								".trigger:"+json.system[0].device[i].trigger[j].name+
+								".device:"+json.system[0].device[i].trigger[j].device[k].type+
+								".listener:"+json.system[0].device[i].trigger[j].device[k].listener[l].name+
+								".arg:"+json.system[0].device[i].trigger[j].device[k].listener[l].arg[children].name+"\n";
+							}
 						}
 					}
 				}
 			}
 		}
+	}catch(err){
+		callback(err);
+		return;
 	}
-	return null; //tehere were no errors
+	calback(null);
+	return; //tehere were no errors
 }
