@@ -236,9 +236,45 @@ ul.inheritsList
 						<tr>
 							<td class="attributes">&nbsp;</td>
 							<td class="nameDescription">
-								<div class="fixedFont"><b><a href="../symbols/_global_.html#translate">translate</a></b>()
+								<div class="fixedFont"><b><a href="../symbols/_global_.html#checkSyntax">checkSyntax</a></b>(obj)
 								</div>
-								<div class="description">Let's try it.</div>
+								<div class="description">This function checks the semantics of the JS object parsed from the initial XML</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/_global_.html#getAttributes">getAttributes</a></b>(obj)
+								</div>
+								<div class="description">This function returns an array of those top-level elements that have no children in the object.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/_global_.html#getListenerCount">getListenerCount</a></b>(obj)
+								</div>
+								<div class="description">This function counts the <listener> elements in the XML tree, so that the total number of trigger-listener pairs can be known.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/_global_.html#sortArgs">sortArgs</a></b>(device_type, func_name, args, index_i, index_j, index_k, index_l, callback(arg_array))
+								</div>
+								<div class="description">This function will sort the arguments givenen in the  for triggers/listeners in a way, that the actual devices will be able to receive them in the right order at initialisation phase.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/_global_.html#translate">translate</a></b>(callback(translated))
+								</div>
+								<div class="description">This function will translate the raw xml into a JS object that can be used to generate the C init/runtime command arrays</div>
 							</td>
 						</tr>
 					
@@ -263,15 +299,15 @@ ul.inheritsList
 					Method Detail
 				</div>
 				
-					<a name="translate"> </a>
+					<a name="checkSyntax"> </a>
 					<div class="fixedFont">
 					
 					
-					<b>translate</b>()
+					<b>checkSyntax</b>(obj)
 					
 					</div>
 					<div class="description">
-						Let's try it.
+						This function checks the semantics of the JS object parsed from the initial XML
 						
 							<br />
 							<i>Defined in: </i> <a href="../symbols/src/translator.js.html">translator.js</a>.
@@ -281,6 +317,216 @@ ul.inheritsList
 					
 					
 					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{object}</span> <b>obj</b>
+									
+								</dt>
+								<dd>- The JS object containing the parsed XML tree</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="getAttributes"> </a>
+					<div class="fixedFont">
+					
+					
+					<b>getAttributes</b>(obj)
+					
+					</div>
+					<div class="description">
+						This function returns an array of those top-level elements that have no children in the object.
+This corresponds to the attributes and values of elements (not sub-elements) of the XML tree.
+						
+							<br />
+							<i>Defined in: </i> <a href="../symbols/src/translator.js.html">translator.js</a>.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{object}</span> <b>obj</b>
+									
+								</dt>
+								<dd>- A JS object</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="getListenerCount"> </a>
+					<div class="fixedFont">
+					
+					
+					<b>getListenerCount</b>(obj)
+					
+					</div>
+					<div class="description">
+						This function counts the <listener> elements in the XML tree, so that the total number of trigger-listener pairs can be known.
+						
+							<br />
+							<i>Defined in: </i> <a href="../symbols/src/translator.js.html">translator.js</a>.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{object}</span> <b>obj</b>
+									
+								</dt>
+								<dd>- The JS object containing the parsed XMl tree</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="sortArgs"> </a>
+					<div class="fixedFont">
+					
+					
+					<b>sortArgs</b>(device_type, func_name, args, index_i, index_j, index_k, index_l, callback(arg_array))
+					
+					</div>
+					<div class="description">
+						This function will sort the arguments givenen in the  for triggers/listeners in a way, that the actual devices will be able to receive them in the right order at initialisation phase.
+						
+							<br />
+							<i>Defined in: </i> <a href="../symbols/src/translator.js.html">translator.js</a>.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{string}</span> <b>device_type</b>
+									
+								</dt>
+								<dd>- The name of the device which trigger/listens to the function.</dd>
+							
+								<dt>
+									<span class="light fixedFont">{string}</span> <b>func_name</b>
+									
+								</dt>
+								<dd>- The name of the trigger/listener function.</dd>
+							
+								<dt>
+									<span class="light fixedFont">{string[]}</span> <b>args</b>
+									
+								</dt>
+								<dd>- The arguments to short.</dd>
+							
+								<dt>
+									<span class="light fixedFont">{integer}</span> <b>index_i</b>
+									
+								</dt>
+								<dd>- The "i" index of the loop the caller was in. The function gives this back in the callback, so that the walking of a tree can continue despite async execution.</dd>
+							
+								<dt>
+									<span class="light fixedFont">{integer}</span> <b>index_j</b>
+									
+								</dt>
+								<dd>- The "j" index of the loop the caller was in. The function gives this back in the callback, so that the walking of a tree can continue despite async execution.</dd>
+							
+								<dt>
+									<span class="light fixedFont">{integer}</span> <b>index_k</b>
+									
+								</dt>
+								<dd>- The "k" index of the loop the caller was in. The function gives this back in the callback, so that the walking of a tree can continue despite async execution.</dd>
+							
+								<dt>
+									<span class="light fixedFont">{integer}</span> <b>index_l</b>
+									
+								</dt>
+								<dd>- The "l" index of the loop the caller was in. The function gives this back in the callback, so that the walking of a tree can continue despite async execution.</dd>
+							
+								<dt>
+									<span class="light fixedFont">{function}</span> <b>callback(arg_array)</b>
+									
+								</dt>
+								<dd>- Callback function giving back the sorted argument string array.</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="translate"> </a>
+					<div class="fixedFont">
+					
+					
+					<b>translate</b>(callback(translated))
+					
+					</div>
+					<div class="description">
+						This function will translate the raw xml into a JS object that can be used to generate the C init/runtime command arrays
+						
+							<br />
+							<i>Defined in: </i> <a href="../symbols/src/translator.js.html">translator.js</a>.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{function}</span> <b>callback(translated)</b>
+									
+								</dt>
+								<dd>- Callback function giving back the JS object containing the prepared JS object</dd>
+							
+							</dl>
 						
 						
 						
@@ -303,7 +549,7 @@ ul.inheritsList
 <!-- ============================== footer ================================= -->
 		<div class="fineprint" style="clear:both">
 			
-			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Sat Nov 28 2015 10:55:25 GMT+0100 (CET)
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Sat Dec 05 2015 01:24:26 GMT+0100 (CET)
 		</div>
 	</body>
 </html>
