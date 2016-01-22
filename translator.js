@@ -2,14 +2,10 @@ var parser = require("xml2json");
 var fs = require("fs");
 var sqlite3 = require("sqlite3").verbose();
 
-//TODO: comment, and rewrite function descriptors!
-//TODO: add a precheck function, to determine if the tree is right or something.
-//TODO: start all local variables with an underscore
-
 
 /**
- * This function will translate the raw xml into blocks of C initialisation code that will be built into the actual target binary.
- * @param {function} callback(translated) - Callback function giving back the translated C code.
+ * This function will translate the raw xml into a JS object that can be used to generate the C init/runtime command arrays
+ * @param {function} callback(translated) - Callback function giving back the JS object containing the prepared JS object
  */
 translate = function(callback){
 	//TODO: rewrite this, so that an xml string can be passed!
@@ -27,15 +23,12 @@ translate = function(callback){
 		callback(err,null);
 		return;
 	}
-	
-	//console.log(checkSyntax(json));
-	
+
 	var caller=this;
 	var listenerCount=getListenerCount(json);
 	var result;
 	this.result=[];
 	
-	//TODO: While walking the xml, pay attention, that only given blocks can be embedded into each other (e.g. system-device-trigger()args-listener()args...)
 	//TODO: Throw an error when a trigger was used instead of a listener and vice versa.
 	for (var i in json.system[0].device){
 		for (var j in json.system[0].device[i].trigger){
@@ -129,10 +122,14 @@ translate = function(callback){
 module.exports.translate=translate; //So it can be accessed from other source files.
 
 /**
- * This function will sort the arguments givenen in the xml for triggers/listeners in a way, that the actual devices will be able to receive them in the right order at initialisation phase.
+ * This function will sort the arguments givenen in the  for triggers/listeners in a way, that the actual devices will be able to receive them in the right order at initialisation phase.
  * @param {string} device_type - The name of the device which trigger/listens to the function.
- * @param {string} func_name - The name of the trigger/listener function. 
+ * @param {string} func_name - The name of the trigger/listener function.
  * @param {string[]} args - The arguments to short.
+ * @param {integer} index_i - The "i" index of the loop the caller was in. The function gives this back in the callback, so that the walking of a tree can continue despite async execution.
+ * @param {integer} index_j - The "j" index of the loop the caller was in. The function gives this back in the callback, so that the walking of a tree can continue despite async execution.
+ * @param {integer} index_k - The "k" index of the loop the caller was in. The function gives this back in the callback, so that the walking of a tree can continue despite async execution.
+ * @param {integer} index_l - The "l" index of the loop the caller was in. The function gives this back in the callback, so that the walking of a tree can continue despite async execution.
  * @param {function} callback(arg_array) - Callback function giving back the sorted argument string array.
  */
 sortArgs = function(device_type, func_name, args, index_i, index_j, index_k, index_l, callback){
@@ -206,191 +203,203 @@ getDeviceFunctionID = function(deviceName, functionName, callback){
 	return;
 }
 
-getListenerCount = function(json){
+/**
+ * This function counts the <listener> elements in the XML tree, so that the total number of trigger-listener pairs can be known.
+ * @param {object} obj - The JS object containing the parsed XMl tree
+ */
+getListenerCount = function(obj){
 	var _listenerCount=0;
 	
-	for (var i in json.system[0].device){
-		for (var j in json.system[0].device[i].trigger){
-			for (var k in json.system[0].device[i].trigger[j].device){
-					_listenerCount+=json.system[0].device[i].trigger[j].device[k].listener.length;
+	for (var i in obj.system[0].device){
+		for (var j in obj.system[0].device[i].trigger){
+			for (var k in obj.system[0].device[i].trigger[j].device){
+					_listenerCount+=obj.system[0].device[i].trigger[j].device[k].listener.length;
 			}
 		}
 	}
 	return _listenerCount;
 }
 
-checkSyntax = function(json){
+/**
+ * This function checks the semantics of the JS object parsed from the initial XML
+ * @param {object} obj - The JS object containing the parsed XML tree
+ */
+checkSyntax = function(obj){
 	var errorMsg="Error while translating XML: " //every error message will start with this
 	var children; //just a loop counter
 
 //TODO: check everywhere, that the given number of args were given
 	
 	//only one <system> can and should exist.
-	if (Object.keys(json).length!=1 || Object.keys(json)[0]!="system"){
-		throw errorMsg+"only a single <system>...</system> block should exist at the top level!\n   "+
+	if (Object.keys(obj).length!=1 || Object.keys(obj)[0]!="system"){
+		throw errorMsg+"only a single <system>...</system> element should exist at the top level!\n   "+
 		"In: system";
 	}
 	
-	//only <device> block(s) should be in the <system>
-	var system_keys = Object.keys(json.system[0]);
+	//only <device> element(s) should be in the <system>
+	var system_keys = Object.keys(obj.system[0]);
 	for(children in system_keys){
 		if (system_keys[children]!="device"){
-			throw errorMsg+"the <system> block should only contain one or more <device> blocks!\n   "+
+			throw errorMsg+"the <system> element should only contain one or more <device> elements!\n   "+
 			"In: system";
 		}
 	}
 	
-	//iterating outer <device> blocks...
-	for (var i in json.system[0].device){
+	//iterating outer <device> elements...
+	for (var i in obj.system[0].device){
 		
 		//only <device type=... id=...> should exist.
-		var outer_device_attributes=getAttributes(json.system[0].device[i]);
+		var outer_device_attributes=getAttributes(obj.system[0].device[i]);
 		if (outer_device_attributes.length!=2 ||
 			outer_device_attributes.indexOf("type") == -1 ||
 			outer_device_attributes.indexOf("id") == -1){
-			throw errorMsg+"the <device> blocks must have one \"type\", and one \"id\" property defined!\n   "+
-			"In: system > device("+json.system[0].device[i].type+")\n";
+			throw errorMsg+"the <device> elements must have one \"type\", and one \"id\" property defined!\n   "+
+			"In: system > device("+obj.system[0].device[i].type+")\n";
 		}
 		
 		//Members of outer <device>s must be <trigger>s
-		var outer_device_keys = Object.keys(json.system[0].device[i]);
+		var outer_device_keys = Object.keys(obj.system[0].device[i]);
 		for(children=2; children<outer_device_keys.length; children++){ //the 0 and 1 index was the "type" and "id" attributes.
 			if (outer_device_keys[children]!="trigger"){
-				throw errorMsg+"the outer <device> block should only contain one or more <trigger> blocks!\n\   "+
-				"In: system > device("+json.system[0].device[i].type+")\n";
+				throw errorMsg+"the outer <device> element should only contain one or more <trigger> elements!\n\   "+
+				"In: system > device("+obj.system[0].device[i].type+")\n";
 			}
 		}
 		
 		//iterating through <trigger>s...
-		for (var j in json.system[0].device[i].trigger){
+		for (var j in obj.system[0].device[i].trigger){
 			
-			var trigger_attributes = getAttributes(json.system[0].device[i].trigger[j]);
+			var trigger_attributes = getAttributes(obj.system[0].device[i].trigger[j]);
 			if (trigger_attributes.length != 1 ||
 				trigger_attributes.indexOf("name") == -1){
-				throw errorMsg+"the <trigger> block should have one \"name\" property defined!\n   "+
-				"In: system > device("+json.system[0].device[i].type+")\n";
+				throw errorMsg+"the <trigger> element should have one \"name\" property defined!\n   "+
+				"In: system > device("+obj.system[0].device[i].type+")\n";
 			}
 			
 			//iterating through trigger <arg>s and <device>s inside <trigger>s
-			var trigger_keys = Object.keys(json.system[0].device[i].trigger[j]);
+			var trigger_keys = Object.keys(obj.system[0].device[i].trigger[j]);
 			for(children=1 ;children<trigger_keys.length;children++){
 				
 				//in case no device to listen was given
 				if(trigger_keys.indexOf("device")==0){
-					throw errorMsg+"the <trigger> block should contain at least one <device> block!\n   "+
-					"In: system > device("+json.system[0].device[i].type+") > "+
-					"trigger("+json.system[0].device[i].trigger[j].name+")\n";
+					throw errorMsg+"the <trigger> element should contain at least one <device> element!\n   "+
+					"In: system > device("+obj.system[0].device[i].type+") > "+
+					"trigger("+obj.system[0].device[i].trigger[j].name+")\n";
 				}
 				
-				//in case anything else than <arg> or <device> was inside the <trigger> block
+				//in case anything else than <arg> or <device> was inside the <trigger> element
 				if (trigger_keys[children]!="arg" &&
 					trigger_keys[children]!="device"){
-					throw errorMsg+"the <trigger> block should only contain <arg> and <device> blocks!\n   "+
-					"In: system > device("+json.system[0].device[i].type+") > "+
-					"trigger("+json.system[0].device[i].trigger[j].name+")\n";
+					throw errorMsg+"the <trigger> element should only contain <arg> and <device> elements!\n   "+
+					"In: system > device("+obj.system[0].device[i].type+") > "+
+					"trigger("+obj.system[0].device[i].trigger[j].name+")\n";
 				}
 			}
 			
-			//looping through the <arg> blocks to see if they only have a name attribute and and a value inside
-			for (children in json.system[0].device[i].trigger[j].arg){
+			//looping through the <arg> elements to see if they only have a name attribute and and a value inside
+			for (children in obj.system[0].device[i].trigger[j].arg){
 				
-				var trigger_arg_attributes=getAttributes(json.system[0].device[i].trigger[j].arg[children]);
+				var trigger_arg_attributes=getAttributes(obj.system[0].device[i].trigger[j].arg[children]);
 				//args should have a name
 				if (trigger_arg_attributes[0]!="name"){
-					throw errorMsg+"the <arg> blocks must have a \"name\" property defined!\n   "+
-					"In: system > device("+json.system[0].device[i].type+") > "+
-					"trigger("+json.system[0].device[i].trigger[j].name+")\n";
+					throw errorMsg+"the <arg> elements must have a \"name\" property defined!\n   "+
+					"In: system > device("+obj.system[0].device[i].type+") > "+
+					"trigger("+obj.system[0].device[i].trigger[j].name+")\n";
 				}
 				//args should have a value
 				if (trigger_arg_attributes[1]!="$t"){
-					throw errorMsg+"the <arg> blocks must have a defined value!\n   "+
-					"In: system > device("+json.system[0].device[i].type+") > "+
-					"trigger("+json.system[0].device[i].trigger[j].name+") > "+
-					"arg("+json.system[0].device[i].trigger[j].arg[children].name+")\n";
+					throw errorMsg+"the <arg> elements must have a defined value!\n   "+
+					"In: system > device("+obj.system[0].device[i].type+") > "+
+					"trigger("+obj.system[0].device[i].trigger[j].name+") > "+
+					"arg("+obj.system[0].device[i].trigger[j].arg[children].name+")\n";
 				}
 			}
 			
 			//looping through the inner <device>s
-			for (var k in json.system[0].device[i].trigger[j].device){
+			for (var k in obj.system[0].device[i].trigger[j].device){
 				
-				//check if only the "type" and "id" attributes were given to the inner <device> block
-				var inner_device_attributes = getAttributes(json.system[0].device[i].trigger[j].device[k]);
+				//check if only the "type" and "id" attributes were given to the inner <device> element
+				var inner_device_attributes = getAttributes(obj.system[0].device[i].trigger[j].device[k]);
 				if (inner_device_attributes.length != 2 ||
 					inner_device_attributes.indexOf("type")==-1 ||
 					inner_device_attributes.indexOf("id")==-1){
-					throw errorMsg+"the <device> blocks must have one \"type\", and one \"id\" property defined!\n   "+
-					"In: system > device("+json.system[0].device[i].type+") > "+
-					"trigger("+json.system[0].device[i].trigger[j].name+")\n"
+					throw errorMsg+"the <device> elements must have one \"type\", and one \"id\" property defined!\n   "+
+					"In: system > device("+obj.system[0].device[i].type+") > "+
+					"trigger("+obj.system[0].device[i].trigger[j].name+")\n"
 				}
 				
-				var inner_device_keys=Object.keys(json.system[0].device[i].trigger[j].device[k]);
+				var inner_device_keys=Object.keys(obj.system[0].device[i].trigger[j].device[k]);
 				for(children=2; children<inner_device_keys.length;children++){
 					if(inner_device_keys[children]!="listener"){
-						throw errorMsg+"the inner <device> block should only contain <listener> blocks\n   "+
-						"In: system > device("+json.system[0].device[i].type+") > "+
-						"trigger("+json.system[0].device[i].trigger[j].name+") > "+
-						"device("+json.system[0].device[i].trigger[j].device[k].type+")\n";
+						throw errorMsg+"the inner <device> element should only contain <listener> elements\n   "+
+						"In: system > device("+obj.system[0].device[i].type+") > "+
+						"trigger("+obj.system[0].device[i].trigger[j].name+") > "+
+						"device("+obj.system[0].device[i].trigger[j].device[k].type+")\n";
 					}
 				}
 				
-				//looping through the <listener> blocks
-				for (var l in json.system[0].device[i].trigger[j].device[k].listener){
+				//looping through the <listener> elements
+				for (var l in obj.system[0].device[i].trigger[j].device[k].listener){
 					
-					//checking that the listener block has only one attribute, which is "name"
-					var listener_attributes=getAttributes(json.system[0].device[i].trigger[j].device[k].listener[l]);
+					//checking that the listener element has only one attribute, which is "name"
+					var listener_attributes=getAttributes(obj.system[0].device[i].trigger[j].device[k].listener[l]);
 					if (listener_attributes.length!=1 ||
 						listener_attributes.indexOf("name")==-1){
-						throw "the <listener> block should have one \"name\" property defined!\n   "+
-						"In: system > device("+json.system[0].device[i].type+") > "+
-						"trigger("+json.system[0].device[i].trigger[j].name+") > "+
-						"device("+json.system[0].device[i].trigger[j].device[k].type+") > "+
-						"listener("+json.system[0].device[i].trigger[j].device[k].listener[l].name+")\n";
+						throw "the <listener> element should have one \"name\" property defined!\n   "+
+						"In: system > device("+obj.system[0].device[i].type+") > "+
+						"trigger("+obj.system[0].device[i].trigger[j].name+") > "+
+						"device("+obj.system[0].device[i].trigger[j].device[k].type+") > "+
+						"listener("+obj.system[0].device[i].trigger[j].device[k].listener[l].name+")\n";
 					}
 					
 					//checking that only <arg>s are in <listener>s
-					var inner_device_keys=Object.keys(json.system[0].device[i].trigger[j].device[k].listener[l]);
+					var inner_device_keys=Object.keys(obj.system[0].device[i].trigger[j].device[k].listener[l]);
 					for(children=1; children<inner_device_keys.length; children++){
 						if(inner_device_keys[children]!="arg"){
-							throw "the <listener> block should only contain <arg> blocks!\n   "+
-							"In: system > device("+json.system[0].device[i].type+") > "+
-							"trigger("+json.system[0].device[i].trigger[j].name+") > "+
-							"device("+json.system[0].device[i].trigger[j].device[k].type+") > "+
-							"listener("+json.system[0].device[i].trigger[j].device[k].listener[l].name+")\n";
+							throw "the <listener> element should only contain <arg> elements!\n   "+
+							"In: system > device("+obj.system[0].device[i].type+") > "+
+							"trigger("+obj.system[0].device[i].trigger[j].name+") > "+
+							"device("+obj.system[0].device[i].trigger[j].device[k].type+") > "+
+							"listener("+obj.system[0].device[i].trigger[j].device[k].listener[l].name+")\n";
 						}
 					}
 					
 					//looping through <arg>s of listeners
-					for (children in json.system[0].device[i].trigger[j].device[k].listener[l].arg){
+					for (children in obj.system[0].device[i].trigger[j].device[k].listener[l].arg){
 						
-						var listener_arg_attributes = getAttributes(json.system[0].device[i].trigger[j].device[k].listener[l].arg[children]);
+						var listener_arg_attributes = getAttributes(obj.system[0].device[i].trigger[j].device[k].listener[l].arg[children]);
 						
 						//checking if they all have a "name" attribute
 						if (listener_arg_attributes[0]!="name"){
-							throw errorMsg+"the <arg> blocks must have a \"name\" property defined!\n   "+
-							"In: system > device("+json.system[0].device[i].type+") > "+
-							"trigger("+json.system[0].device[i].trigger[j].name+") > "+
-							"device("+json.system[0].device[i].trigger[j].device[k].type+") > "+
-							"listener("+json.system[0].device[i].trigger[j].device[k].listener[l].name+")\n";
+							throw errorMsg+"the <arg> elements must have a \"name\" property defined!\n   "+
+							"In: system > device("+obj.system[0].device[i].type+") > "+
+							"trigger("+obj.system[0].device[i].trigger[j].name+") > "+
+							"device("+obj.system[0].device[i].trigger[j].device[k].type+") > "+
+							"listener("+obj.system[0].device[i].trigger[j].device[k].listener[l].name+")\n";
 						}
 				
 						//and a value
 						if (listener_arg_attributes[1]!="$t"){
-							throw errorMsg+"the <arg> blocks must have a defined value!\n   "+
-							"system > device("+json.system[0].device[i].type+") > "+
-							"trigger("+json.system[0].device[i].trigger[j].name+") > "+
-							"device("+json.system[0].device[i].trigger[j].device[k].type+") > "+
-							"listener("+json.system[0].device[i].trigger[j].device[k].listener[l].name+") > "+
-							"arg("+json.system[0].device[i].trigger[j].device[k].listener[l].arg[children].name+")\n";
+							throw errorMsg+"the <arg> elements must have a defined value!\n   "+
+							"system > device("+obj.system[0].device[i].type+") > "+
+							"trigger("+obj.system[0].device[i].trigger[j].name+") > "+
+							"device("+obj.system[0].device[i].trigger[j].device[k].type+") > "+
+							"listener("+obj.system[0].device[i].trigger[j].device[k].listener[l].name+") > "+
+							"arg("+obj.system[0].device[i].trigger[j].device[k].listener[l].arg[children].name+")\n";
 						}
 					}
 				}
 			}
 		}
 	}
-	return; //tehere were no errors
+	return; //if there was no error
 }
 
-//returns an array of attributes
+/**
+ * This function returns an array of those top-level elements that have no children in the object.
+ * This corresponds to the attributes and values of elements (not sub-elements) of the XML tree.
+ * @param {object} obj - A JS object
+ */
 getAttributes = function(obj){
 	var result = [];
 

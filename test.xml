@@ -1,19 +1,19 @@
 <system>
-	<device type="temp_sensor" id="5F:01:12:A2">
+	<device type="temp_sensor" id="00:00:00:00:5F:01:12:A2">
 		<trigger name="temp_between">
-			<arg name="min_temp"></arg>
+			<arg name="min_temp">25</arg>
 			<arg name="max_temp">30</arg>
-			<device type="coffee_machine" id="00:00:00:01">
+			<device type="coffee_machine" id="00:00:00:00:00:00:00:01">
 				<listener name="brew_espresso">
 					<arg name="with_milk">no</arg>
 				</listener>
 			</device>
 		</trigger>
 	</device>
-	<device type="humidity_sensor" id="5F:01:12:A1">
+	<device type="humidity_sensor" id="00:00:00:00:5F:01:12:A1">
 		<trigger name="humidity_higher">
 			<arg name="min_humidity">25</arg>
-			<device type="coffee_machine" id="00:00:00:02">
+			<device type="coffee_machine" id="00:00:00:00:00:00:00:02">
 				<listener name="brew_espresso"></listener>
 			</device>
 		</trigger>
