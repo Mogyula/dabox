@@ -25,20 +25,15 @@ int main( int argc, char *argv[] ) {
 	
 	int err=pthread_create(&inThread, &attr, &inBound, NULL);
 	if (err != 0)
-		printf("Can't create inbound thread.\n", strerror(err));
+		perror("\nERROR - Can't create inbound thread.");
 	
-	//dummy process
-	while(1){
-		sleep(2);
-		printf("Dummy.\n");
-	}
-	
-	pthread_exit(0);
+	pthread_join(inThread, NULL);
+	pthread_exit(NULL);
 }
 
 void* inBound(void *arg) {
 	int sockfd, portno;
-	char buffer[256]; //we won't need this many bytes.
+	//char buffer[16]; //we won't need this many bytes.
 	struct sockaddr_in serv_addr, cli_addr;
 	int n, pid;
 
@@ -46,8 +41,8 @@ void* inBound(void *arg) {
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (sockfd < 0) {
-	  perror("ERROR opening socket");
-	  exit(1);
+	  perror("\nERROR - Couldn't open socket.");
+	  pthread_exit(NULL);
 	}
 
 	/* Initialize socket structure */
@@ -60,8 +55,8 @@ void* inBound(void *arg) {
 
 	/* Now bind the host address using bind() call.*/
 	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-	  perror("ERROR on binding");
-	  exit(1);
+	  perror("\nERROR - Couldn't bind.");
+	  pthread_exit(NULL);
 	}
 
 	/* Now start listening for the clients, here
@@ -80,41 +75,41 @@ void* inBound(void *arg) {
 		//A thread will work on the same memory space, so we'll have to allocate for any individual connection.
 		
 		if (newsockfd < 0) {
-			perror("ERROR on accept");
+			perror("\nERROR - Error on accept");
 		}
 		else{
 			pthread_t *thr =malloc(sizeof(pthread_t));
 			int err=pthread_create(thr, &attr, &doProcessing, newsockfd);
 			free(thr);
 			if (err != 0)
-				printf("Can't create an inbound processing thread.\n", strerror(err));
+				perror("\nERROR - Couldn't create an inbound processing thread.");
 			else{
 
 			}
 		}
 	} //end of while
-	pthread_exit(0);
+	pthread_exit(NULL);
 }
 
 void* doProcessing (void *sock) {
 	int n;
-	char buffer[256];
-	bzero(buffer,256);
-	n = read(*((int*)sock),buffer,255);
+	char buffer[16];
+	bzero(buffer,16);
+	n = read(*((int*)sock),buffer,16);
 
 	if (n < 0) {
-		perror("ERROR reading from socket");
-		exit(1);
+		perror("\nERROR - Couldn't read from socket.");
+		pthread_exit(NULL);
 	}
 
-	printf("Here is the message: %s\n",buffer);
-	n = write(*((int*)sock),"I got your message",18);
-
-	if (n < 0) {
-		perror("ERROR writing to socket");
-		exit(1);
+	//Here we can manipulate what we have just read.
+	for(int i=0; i<16;i++){
+		unsigned char nthByte=(unsigned char)*(buffer+i);
+		printf("Here is the %d. byte: %d\n", i, nthByte);
 	}
+	//
+
 	close(*((int*)sock));
 	free(sock);
-	pthread_exit(0);
+	pthread_exit(NULL);
 }
