@@ -1,2 +1,2 @@
 all: box.c
-		gcc box.c -o box
+		gcc -pthread -o box box.c

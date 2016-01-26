@@ -7,15 +7,30 @@
 #include <string.h>
 
 #include <pthread.h>
+#include <unistd.h>
 
 //first of all, i'd like to make the connection using threads.
 
 void doprocessing (int sock);
-void doSome ();
+void* inBound (void *arg);
 
 int main( int argc, char *argv[] ) {
+	pthread_t inThread, outThread;
+	int err=pthread_create(&inThread, NULL, &inBound, NULL);
+	if (err != 0)
+		printf("\ncan't create thread :[%s]", strerror(err));
+	else
+		printf("\n Thread created successfully\n");
+	//dummy process
+	while(1){
+		sleep(2);
+		printf("Dummy.\n");
+	}
+}
+
+void* inBound(void *arg) {
    int sockfd, portno;
-   char buffer[256];
+   char buffer[256]; //we won't need this many bytes.
    struct sockaddr_in serv_addr, cli_addr;
    int n, pid;
    
@@ -49,8 +64,20 @@ int main( int argc, char *argv[] ) {
    */
    
    listen(sockfd,5); //2nd argument is the max queue length
+   int clilen = sizeof(cli_addr);
    
-   doSome(sockfd, cli_addr);
+   while (1) {
+		int newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+		
+		if (newsockfd < 0) {
+		 perror("ERROR on accept");
+		 exit(1);
+		}
+
+		doprocessing(newsockfd);
+		close(newsockfd);
+
+   }
 }
 
 void doprocessing (int sock) {
@@ -72,21 +99,4 @@ void doprocessing (int sock) {
       exit(1);
    }
 	
-}
-
-void doSome(int sockfd, struct sockaddr_in cli_addr){
-	int clilen = sizeof(cli_addr);
-	//this is just a test to try threading.
-	while (1) {
-		int newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-		
-		if (newsockfd < 0) {
-		 perror("ERROR on accept");
-		 exit(1);
-		}
-
-		doprocessing(newsockfd);
-		close(newsockfd);
-
-   }
 }
