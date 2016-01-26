@@ -5,10 +5,22 @@
 import socket
 import sys
 from threading import Thread
+
+#custom imports go here
+from sense_hat import SenseHat
  
 HOST = ''   # Symbolic name meaning all available interfaces
-PORT = 22000  # Arbitrary non-privileged port
+PORT = 18001  # Arbitrary non-privileged port
+
+
  
+sense = SenseHat()
+sense.set_rotation(180)
+sense.low_light = True
+temp=sense.get_temperature_from_humidity()
+
+
+
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print 'Socket created'
  
@@ -27,6 +39,8 @@ print 'Socket now listening'
  
 #Function for handling connections. This will be used to create threads
 def handlerthread(conn):
+	#We'll handle the commands here
+	
 	#Here we'll get the message, process it, and then do whatever we want.
     #Sending message to connected client
      
@@ -35,12 +49,14 @@ def handlerthread(conn):
 	#Receiving from client. If the data is "write", then we'll write something on the LED matrix.
 	data = conn.recv(1024)
 	reply = 'OK...' + data
+	
+	sense.show_message("%s" % data)
 
 	conn.sendall(reply)
      
     #came out of loop
 	conn.close()
- 
+
 #now keep talking with the client
 while 1:
     #wait to accept a connection - blocking call
