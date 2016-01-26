@@ -14,10 +14,16 @@
 void* doProcessing (void *sock);
 void* inBound (void *arg);
 
+pthread_attr_t attr;
+
 int main( int argc, char *argv[] ) {
 	pthread_t inThread, outThread;
 	
-	int err=pthread_create(&inThread, NULL, &inBound, NULL);
+	//initializing pthread attributes as all threads wil be created detached
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	
+	int err=pthread_create(&inThread, &attr, &inBound, NULL);
 	if (err != 0)
 		printf("Can't create inbound thread.\n", strerror(err));
 	
@@ -27,7 +33,7 @@ int main( int argc, char *argv[] ) {
 		printf("Dummy.\n");
 	}
 	
-	exit(0);
+	pthread_exit(0);
 }
 
 void* inBound(void *arg) {
@@ -46,7 +52,7 @@ void* inBound(void *arg) {
 
 	/* Initialize socket structure */
 	bzero((char *) &serv_addr, sizeof(serv_addr));
-	portno = 18003;
+	portno = 18010;
 
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
@@ -65,8 +71,6 @@ void* inBound(void *arg) {
 
 	listen(sockfd,5); //2nd argument is the max queue length
 	int clilen = sizeof(cli_addr);
-	   
-	pthread_t asdasd;
 	
 	while (1) {
 		int *newsockfd=malloc(sizeof(int));
@@ -79,7 +83,9 @@ void* inBound(void *arg) {
 			perror("ERROR on accept");
 		}
 		else{
-			int err=pthread_create(&asdasd, NULL, &doProcessing, newsockfd);
+			pthread_t *thr =malloc(sizeof(pthread_t));
+			int err=pthread_create(thr, &attr, &doProcessing, newsockfd);
+			free(thr);
 			if (err != 0)
 				printf("Can't create an inbound processing thread.\n", strerror(err));
 			else{
@@ -87,6 +93,7 @@ void* inBound(void *arg) {
 			}
 		}
 	} //end of while
+	pthread_exit(0);
 }
 
 void* doProcessing (void *sock) {
@@ -109,5 +116,5 @@ void* doProcessing (void *sock) {
 	}
 	close(*((int*)sock));
 	free(sock);
-	return(0);
+	pthread_exit(0);
 }
