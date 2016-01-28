@@ -1,2 +1,2 @@
 #!/bin/sh
-valgrind --tool=memcheck --leak-check=yes ./box
+valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all ./box

@@ -8,31 +8,45 @@
 
 #include <pthread.h>
 #include <unistd.h>
+#include <ctype.h>
 
 //first of all, i'd like to make the connection using threads.
 
-void* doProcessing (void *sock);
-void* inBound (void *arg);
+void* doProcessingDev (void *sock);
+void* fromDevice (void *port);
+char isNumber(char* str);
 
 pthread_attr_t attr;
 
-int main( int argc, char *argv[] ) {
-	pthread_t inThread, outThread;
+int main(int argc, char *argv[] ) {
+	//let's check if the 1st argument is a number
+	if(!(argc==2 && isNumber(argv[1]))){
+		printf("Usage: %s [portno]\n", argv[0]);
+		return(1);
+	}
+	int port = strtol(argv[1], (char**)NULL, 10);
+	
+	int toDevPort=port;
+	int fromDevPort=port+1;
+	int toSrvPort=port+2;
+	int fromSrvPort=port+3;
+	
+	pthread_t fromDevThr, fromSrvThr;
 	
 	//initializing pthread attributes as all threads wil be created detached
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	
-	int err=pthread_create(&inThread, &attr, &inBound, NULL);
+	int err=pthread_create(&fromDevThr, &attr, &fromDevice, &fromDevPort);
 	if (err != 0)
-		perror("\nERROR - Can't create inbound thread.");
+		perror("\nERROR - Can't create fromDevice thread.");
 	
-	pthread_join(inThread, NULL);
+	pthread_join(fromDevThr, NULL);
 	pthread_exit(NULL);
 }
 
-void* inBound(void *arg) {
-	int sockfd, portno;
+void* fromDevice(void *port) {
+	int sockfd;
 	//char buffer[16]; //we won't need this many bytes.
 	struct sockaddr_in serv_addr, cli_addr;
 	int n, pid;
@@ -47,11 +61,10 @@ void* inBound(void *arg) {
 
 	/* Initialize socket structure */
 	bzero((char *) &serv_addr, sizeof(serv_addr));
-	portno = 18010;
 
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
-	serv_addr.sin_port = htons(portno);
+	serv_addr.sin_port = htons(*((int*)port));
 
 	/* Now bind the host address using bind() call.*/
 	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
@@ -79,10 +92,10 @@ void* inBound(void *arg) {
 		}
 		else{
 			pthread_t *thr =malloc(sizeof(pthread_t));
-			int err=pthread_create(thr, &attr, &doProcessing, newsockfd);
+			int err=pthread_create(thr, &attr, &doProcessingDev, newsockfd);
 			free(thr);
 			if (err != 0)
-				perror("\nERROR - Couldn't create an inbound processing thread.");
+				perror("\nERROR - Couldn't create an fromDevice processing thread.");
 			else{
 
 			}
@@ -91,7 +104,15 @@ void* inBound(void *arg) {
 	pthread_exit(NULL);
 }
 
-void* doProcessing (void *sock) {
+void* fromServer(void *arg){
+	//basically here we'll just wait for the server to say something?
+	//or are we always the first to say hello? yes that would be better?
+	//but what about when an other box is triggering something here?
+	//yes we do need this
+	
+}
+
+void* doProcessingDev (void *sock) {
 	int n;
 	char buffer[16];
 	bzero(buffer,16);
@@ -104,7 +125,7 @@ void* doProcessing (void *sock) {
 
 	//Here we can manipulate what we have just read.
 	for(int i=0; i<16;i++){
-		unsigned char nthByte=(unsigned char)*(buffer+i);
+		unsigned char nthByte=(unsigned char) *(buffer+i);
 		printf("Here is the %d. byte: %d\n", i, nthByte);
 	}
 	//
@@ -112,4 +133,15 @@ void* doProcessing (void *sock) {
 	close(*((int*)sock));
 	free(sock);
 	pthread_exit(NULL);
+}
+
+char isNumber(char* str){
+	int i=0;
+	while(str[i]!='\0'){
+		if(!isdigit(str[i])){
+			return(0);
+		}
+		i++;
+	}
+	return(1);
 }
