@@ -14,40 +14,52 @@
 
 void* doProcessingDev (void *sock);
 void* fromDevice (void *port);
+void* fromServer (void *port);
 char isNumber(char* str);
+int initSocketListener(int port, void* (*processFunc)(void* arg));
 
 pthread_attr_t attr;
 
 int main(int argc, char *argv[] ) {
-	//let's check if the 1st argument is a number
+	
+	//checking if we got 1 argument, and if that's a number.
 	if(!(argc==2 && isNumber(argv[1]))){
 		printf("Usage: %s [portno]\n", argv[0]);
 		return(1);
 	}
-	int port = strtol(argv[1], (char**)NULL, 10);
 	
+	//converting given port arg to integers, so we can pass their pointers to threads later.
+	int port = strtol(argv[1], (char**)NULL, 10);
 	int toDevPort=port;
 	int fromDevPort=port+1;
 	int toSrvPort=port+2;
 	int fromSrvPort=port+3;
 	
+	//the two main listener thread.
 	pthread_t fromDevThr, fromSrvThr;
 	
-	//initializing pthread attributes as all threads wil be created detached
+	//initializing pthread attributes as all threads will be created detached
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	
-	int err=pthread_create(&fromDevThr, &attr, &fromDevice, &fromDevPort);
+	//creating the thread that will serve the incoming connections from the local devices.
+	int err;
+	err=pthread_create(&fromDevThr, &attr, &fromDevice, &fromDevPort);
 	if (err != 0)
-		perror("\nERROR - Can't create fromDevice thread.");
+		perror("\nERROR - Can't create fromDevThr thread.");
+		
+	//creating the thread that will serve the incoming connections from the main server.
+	//err=pthread_create(&fromSrvThr, &attr, &fromServer, &fromSrvPort);
+	//if (err != 0)
+	//	perror("\nERROR - Can't create fromSrvThr thread.");
+		
 	
 	pthread_join(fromDevThr, NULL);
 	pthread_exit(NULL);
 }
 
-void* fromDevice(void *port) {
+int initSocketListener(int port, void * (*processFunc)(void* arg)){
 	int sockfd;
-	//char buffer[16]; //we won't need this many bytes.
 	struct sockaddr_in serv_addr, cli_addr;
 	int n, pid;
 
@@ -56,7 +68,7 @@ void* fromDevice(void *port) {
 
 	if (sockfd < 0) {
 	  perror("\nERROR - Couldn't open socket.");
-	  pthread_exit(NULL);
+	  return(1);
 	}
 
 	/* Initialize socket structure */
@@ -64,12 +76,12 @@ void* fromDevice(void *port) {
 
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
-	serv_addr.sin_port = htons(*((int*)port));
+	serv_addr.sin_port = htons(port);
 
 	/* Now bind the host address using bind() call.*/
 	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
 	  perror("\nERROR - Couldn't bind.");
-	  pthread_exit(NULL);
+	  return(2);
 	}
 
 	/* Now start listening for the clients, here
@@ -89,22 +101,27 @@ void* fromDevice(void *port) {
 		
 		if (newsockfd < 0) {
 			perror("\nERROR - Error on accept");
+			return(3);
 		}
 		else{
 			pthread_t *thr =malloc(sizeof(pthread_t));
-			int err=pthread_create(thr, &attr, &doProcessingDev, newsockfd);
+			int err=pthread_create(thr, &attr, processFunc, newsockfd);
 			free(thr);
-			if (err != 0)
+			if (err != 0){
 				perror("\nERROR - Couldn't create an fromDevice processing thread.");
-			else{
-
+				return(4);
 			}
 		}
 	} //end of while
+	return(0);
+}
+
+void* fromDevice(void *port) {
+	initSocketListener(*(int*)port, &doProcessingDev);
 	pthread_exit(NULL);
 }
 
-void* fromServer(void *arg){
+void* fromServer(void *port){
 	//basically here we'll just wait for the server to say something?
 	//or are we always the first to say hello? yes that would be better?
 	//but what about when an other box is triggering something here?
