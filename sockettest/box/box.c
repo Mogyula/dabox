@@ -1,22 +1,23 @@
 #include <stdio.h>
 #include <stdlib.h>
-
 #include <netdb.h>
 #include <netinet/in.h>
-
 #include <string.h>
-
 #include <pthread.h>
 #include <unistd.h>
 #include <ctype.h>
 
+//TODO:
+// -Add better error messages.
+
 //first of all, i'd like to make the connection using threads.
 
-void* doProcessingDev (void *sock);
+void* doProcessingDev (void *socket);
+void* doProcessingSrv (void *socket);
 void* fromDevice (void *port);
 void* fromServer (void *port);
-char isNumber(char* str);
 int initSocketListener(int port, void* (*processFunc)(void* arg));
+char isNumber(char* str);
 
 pthread_attr_t attr;
 
@@ -49,9 +50,9 @@ int main(int argc, char *argv[] ) {
 		perror("\nERROR - Can't create fromDevThr thread.");
 		
 	//creating the thread that will serve the incoming connections from the main server.
-	//err=pthread_create(&fromSrvThr, &attr, &fromServer, &fromSrvPort);
-	//if (err != 0)
-	//	perror("\nERROR - Can't create fromSrvThr thread.");
+	err=pthread_create(&fromSrvThr, &attr, &fromServer, &fromSrvPort);
+	if (err != 0)
+		perror("\nERROR - Can't create fromSrvThr thread.");
 		
 	
 	pthread_join(fromDevThr, NULL);
@@ -61,7 +62,6 @@ int main(int argc, char *argv[] ) {
 int initSocketListener(int port, void * (*processFunc)(void* arg)){
 	int sockfd;
 	struct sockaddr_in serv_addr, cli_addr;
-	int n, pid;
 
 	/* First call to socket() function */
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -104,11 +104,11 @@ int initSocketListener(int port, void * (*processFunc)(void* arg)){
 			return(3);
 		}
 		else{
-			pthread_t *thr =malloc(sizeof(pthread_t));
+			pthread_t *thr =malloc(sizeof(pthread_t)); //do i need this?
 			int err=pthread_create(thr, &attr, processFunc, newsockfd);
 			free(thr);
 			if (err != 0){
-				perror("\nERROR - Couldn't create an fromDevice processing thread.");
+				perror("\nERROR - Couldn't create a processing thread.");
 				return(4);
 			}
 		}
@@ -117,38 +117,65 @@ int initSocketListener(int port, void * (*processFunc)(void* arg)){
 }
 
 void* fromDevice(void *port) {
-	initSocketListener(*(int*)port, &doProcessingDev);
+	if(initSocketListener(*(int*)port, &doProcessingDev))
+		perror("\nERROR - Couldn't initialize the device listener socket connection.");
 	pthread_exit(NULL);
 }
 
 void* fromServer(void *port){
-	//basically here we'll just wait for the server to say something?
-	//or are we always the first to say hello? yes that would be better?
-	//but what about when an other box is triggering something here?
-	//yes we do need this
+	if(initSocketListener(*(int*)port, &doProcessingSrv))
+		perror("\nERROR - Couldn't initialize the server listener socket connection.");
+	pthread_exit(NULL);
 	
 }
 
-void* doProcessingDev (void *sock) {
+void* doProcessingDev (void *socket) {
 	int n;
 	char buffer[16];
 	bzero(buffer,16);
-	n = read(*((int*)sock),buffer,16);
+	n = read(*((int*)socket),buffer,16);
 
 	if (n < 0) {
 		perror("\nERROR - Couldn't read from socket.");
 		pthread_exit(NULL);
 	}
 
-	//Here we can manipulate what we have just read.
-	for(int i=0; i<16;i++){
-		unsigned char nthByte=(unsigned char) *(buffer+i);
-		printf("Here is the %d. byte: %d\n", i, nthByte);
+	//DO ACTUAL PROCESSING HERE
+	
+	//n=write(socket,handleFunction(buffer),16)
+	
+	if (n < 0) {
+		perror("\nERROR - Couldn't write to socket.");
+		pthread_exit(NULL);
 	}
-	//
+	
+	close(*((int*)socket));
+	free(socket);
+	pthread_exit(NULL);
+}
 
-	close(*((int*)sock));
-	free(sock);
+void* doProcessingSrv (void *socket) {
+	int n;
+	char buffer[16];
+	bzero(buffer,16);
+	n = read(*((int*)socket),buffer,16);
+
+	if (n < 0) {
+		perror("\nERROR - Couldn't read from socket.");
+		pthread_exit(NULL);
+	}
+
+	//DO ACTUAL PROCESSING HERE
+
+	//n=write(socket,handleFunction(buffer),16)
+	
+	if (n < 0) {
+		perror("\nERROR - Couldn't write to socket.");
+		pthread_exit(NULL);
+	}
+	
+	close(*((int*)socket));
+	free(socket);
 	pthread_exit(NULL);
 }
 
