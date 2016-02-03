@@ -47,15 +47,16 @@ int main(int argc, char *argv[] ) {
 	int err;
 	err=pthread_create(&fromDevThr, NULL, &fromDevice, &fromDevPort);
 	if (err != 0)
-		perror("\nERROR - Can't create fromDevThr thread.");
+		perror("ERROR - Can't create fromDevThr thread.\n");
 		
 	//creating the thread that will serve the incoming connections from the main server.
 	err=pthread_create(&fromSrvThr, NULL, &fromServer, &fromSrvPort);
 	if (err != 0)
-		perror("\nERROR - Can't create fromSrvThr thread.");
+		perror("ERROR - Can't create fromSrvThr thread.\n");
 		
 	
 	pthread_join(fromDevThr, NULL);
+	pthread_join(fromSrvThr, NULL);
 	pthread_exit(NULL);
 }
 
@@ -67,7 +68,7 @@ int initSocketListener(int port, void * (*processFunc)(void* arg)){
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (sockfd < 0) {
-	  perror("\nERROR - Couldn't open socket.");
+	  perror("ERROR - Couldn't open socket.\n");
 	  return(1);
 	}
 
@@ -80,8 +81,10 @@ int initSocketListener(int port, void * (*processFunc)(void* arg)){
 	
 	/* Now bind the host address using bind() call.*/
 	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-	  perror("\nERROR - Couldn't bind.");
-	  return(2);
+		perror("ERROR - Couldn't bind.\n");
+		return(2);
+	}else{
+		printf("Listening on port %d...\n", port);
 	}
 
 	/* Now start listening for the clients, here
@@ -100,7 +103,7 @@ int initSocketListener(int port, void * (*processFunc)(void* arg)){
 		//A thread will work on the same memory space, so we'll have to allocate for any individual connection.
 		
 		if (newsockfd < 0) {
-			perror("\nERROR - Error on accept");
+			perror("ERROR - Error on accept.\n");
 			return(3);
 		}
 		else{
@@ -108,7 +111,7 @@ int initSocketListener(int port, void * (*processFunc)(void* arg)){
 			int err=pthread_create(thr, NULL, processFunc, newsockfd);
 			free(thr);
 			if (err != 0){
-				perror("\nERROR - Couldn't create a processing thread.");
+				perror("ERROR - Couldn't create a processing thread.\n");
 				return(4);
 			}
 		}
@@ -118,13 +121,13 @@ int initSocketListener(int port, void * (*processFunc)(void* arg)){
 
 void* fromDevice(void *port) {
 	if(initSocketListener(*(int*)port, &doProcessingDev))
-		perror("\nERROR - Couldn't initialize the device listener socket connection.");
+		perror("ERROR - Couldn't initialize the device listener socket connection.\n");
 	pthread_exit(NULL);
 }
 
 void* fromServer(void *port){
 	if(initSocketListener(*(int*)port, &doProcessingSrv))
-		perror("\nERROR - Couldn't initialize the server listener socket connection.");
+		perror("ERROR - Couldn't initialize the server listener socket connection.\n");
 	pthread_exit(NULL);
 	
 }
@@ -136,7 +139,7 @@ void* doProcessingDev (void *socket) {
 	n = read(*((int*)socket),buffer,16);
 
 	if (n < 0) {
-		perror("\nERROR - Couldn't read from socket.");
+		perror("ERROR - Couldn't read from socket.\n");
 		pthread_exit(NULL);
 	}
 
@@ -146,7 +149,7 @@ void* doProcessingDev (void *socket) {
 	//n=write(socket,handleFunction(buffer),16)
 	
 	if (n < 0) {
-		perror("\nERROR - Couldn't write to socket.");
+		perror("ERROR - Couldn't write to socket.\n");
 		pthread_exit(NULL);
 	}
 	
