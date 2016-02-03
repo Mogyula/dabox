@@ -1,8 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <netdb.h>
 #include <netinet/in.h>
+
+#include <sys/socket.h>
+#include <sys/types.h>
+
 #include <string.h>
+
 #include <pthread.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -19,8 +25,6 @@ void* fromServer (void *port);
 int initSocketListener(int port, void* (*processFunc)(void* arg));
 char isNumber(char* str);
 
-pthread_attr_t attr;
-
 int main(int argc, char *argv[] ) {
 	
 	//checking if we got 1 argument, and if that's a number.
@@ -32,25 +36,21 @@ int main(int argc, char *argv[] ) {
 	//converting given port arg to integers, so we can pass their pointers to threads later.
 	int port = strtol(argv[1], (char**)NULL, 10);
 	int toDevPort=port;
-	int fromDevPort=port+1;
+	int fromDevPort=port+1;	
 	int toSrvPort=port+2;
 	int fromSrvPort=port+3;
 	
 	//the two main listener thread.
 	pthread_t fromDevThr, fromSrvThr;
 	
-	//initializing pthread attributes as all threads will be created detached
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	
 	//creating the thread that will serve the incoming connections from the local devices.
 	int err;
-	err=pthread_create(&fromDevThr, &attr, &fromDevice, &fromDevPort);
+	err=pthread_create(&fromDevThr, NULL, &fromDevice, &fromDevPort);
 	if (err != 0)
 		perror("\nERROR - Can't create fromDevThr thread.");
 		
 	//creating the thread that will serve the incoming connections from the main server.
-	err=pthread_create(&fromSrvThr, &attr, &fromServer, &fromSrvPort);
+	err=pthread_create(&fromSrvThr, NULL, &fromServer, &fromSrvPort);
 	if (err != 0)
 		perror("\nERROR - Can't create fromSrvThr thread.");
 		
@@ -77,7 +77,7 @@ int initSocketListener(int port, void * (*processFunc)(void* arg)){
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	serv_addr.sin_port = htons(port);
-
+	
 	/* Now bind the host address using bind() call.*/
 	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
 	  perror("\nERROR - Couldn't bind.");
@@ -105,7 +105,7 @@ int initSocketListener(int port, void * (*processFunc)(void* arg)){
 		}
 		else{
 			pthread_t *thr =malloc(sizeof(pthread_t)); //do i need this?
-			int err=pthread_create(thr, &attr, processFunc, newsockfd);
+			int err=pthread_create(thr, NULL, processFunc, newsockfd);
 			free(thr);
 			if (err != 0){
 				perror("\nERROR - Couldn't create a processing thread.");
@@ -141,6 +141,7 @@ void* doProcessingDev (void *socket) {
 	}
 
 	//DO ACTUAL PROCESSING HERE
+	printf("You sent: %s", buffer);
 	
 	//n=write(socket,handleFunction(buffer),16)
 	
