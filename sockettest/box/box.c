@@ -23,12 +23,12 @@ void* doProcessingSrv (void *socket);
 void* fromDevice (void *port);
 void* fromServer (void *port);
 int initSocketListener(int port, void* (*processFunc)(void* arg));
-char isNumber(char* str);
+char representsInt(char* str);
 
 int main(int argc, char *argv[] ) {
 	
 	//checking if we got 1 argument, and if that's a number.
-	if(!(argc==2 && isNumber(argv[1]))){
+	if(!(argc==2 && representsInt(argv[1]))){
 		printf("Usage: %s [portno]\n", argv[0]);
 		return(1);
 	}
@@ -92,7 +92,7 @@ int initSocketListener(int port, void * (*processFunc)(void* arg)){
 	  * for the incoming connection
 	*/
 
-	listen(sockfd,5); //2nd argument is the max queue length
+	listen(sockfd,3); //2nd argument is the max queue length
 	int clilen = sizeof(cli_addr);
 	
 	while (1) {
@@ -183,7 +183,7 @@ void* doProcessingSrv (void *socket) {
 	pthread_exit(NULL);
 }
 
-char isNumber(char* str){
+char representsInt(char* str){
 	int i=0;
 	while(str[i]!='\0'){
 		if(!isdigit(str[i])){
