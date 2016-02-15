@@ -3,14 +3,14 @@ import sys
 import threading
 import socket         
 
-class triggerThread (threading.Thread):
+class toBoxThread (threading.Thread):
 	def __init__(self, port):
 		threading.Thread.__init__(self)
 	def run(self):
 		pass
 		#Here we'll basically 
 
-class listenerThread (threading.Thread):
+class fromBoxThread (threading.Thread):
 	def __init__(self, port):
 		threading.Thread.__init__(self)
 	def run(self):
@@ -46,10 +46,8 @@ if not (len(sys.argv)==2 and sys.argv[1].isdigit()):
 	print "Usage: %s [portno]" % sys.argv[0]
 	sys.exit()
 
-#Let's accept everything
-
 port = int(sys.argv[1]);
 
-listenerThread(port).start()
-triggerThread(port).start()
+fromBoxThread(port).start()
+toBoxThread(port).start()
 
