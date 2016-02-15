@@ -1,7 +1,9 @@
 #!/usr/bin/python           
 import sys
 import threading
-import socket         
+import socket
+import struct
+from ctypes import create_string_buffer
 
 class toBoxThread (threading.Thread):
 	def __init__(self, data):
@@ -34,7 +36,9 @@ class processThread (threading.Thread):
     def run(self):
 		print "Connected to %s:%s" % (self.addr[0], self.addr[1])
 		data = self.conn.recv(16)
-		doProcessing(data)
+		answ = doProcessing(data)
+		#if answ != None:
+		#	self.conn.send(buff)
 		self.conn.close()
 		
 def getMac():
@@ -72,7 +76,18 @@ def handleTrigger(data):
 def triggerAck(data):
 	pass
 
+def stringToNum(s):
+	num = 0
+	for i in range(0,len(s),1):
+		print s[i]
+		print i
+		num += ord(s[i])*(2**((len(s)-1-i)*8))
+		print num
+	return num
+
 def doProcessing(data):
+	#we should convert the string to a huge number
+	
 	#btw this is the place where we'll reference the listener functions
 	data = 2**120 #HAVE TO DELETE THIS
 
@@ -97,7 +112,7 @@ def doProcessing(data):
 	else:
 		return None
 	
-	print "calculated answer is: %032x" % answ
+	print "calculated answer is: %04x" % stringToNum("abcde")
 	return answ
 
 #First of all we gonna make sure, that we got only one argument, and that it's a number.
