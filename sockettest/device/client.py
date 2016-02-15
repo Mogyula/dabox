@@ -52,10 +52,7 @@ def initDevice():
 	pass
 	
 def sendId():
-	deviceId = getMac() << 16 #the 2 last bytes will be zeroes for now
-	answ = 2 << (15*8)
-	answ += deviceId << (7*8)
-	return answ
+	return (2 << (15*8)) + (getMac() << (7*8))
 	
 def initSetupMode():
 	pass
