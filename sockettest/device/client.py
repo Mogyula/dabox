@@ -37,8 +37,8 @@ class processThread (threading.Thread):
 		print "Connected to %s:%s" % (self.addr[0], self.addr[1])
 		data = self.conn.recv(16)
 		answ = doProcessing(data)
-		#if answ != None:
-		#	self.conn.send(buff)
+		if answ != None:
+			self.conn.send(answ)
 		self.conn.close()
 		
 def getMac():
@@ -92,8 +92,8 @@ def doProcessing(data):
 	#we should convert the string to a huge number
 	
 	#btw this is the place where we'll reference the listener functions
-	data = 2**120 #HAVE TO DELETE THIS
-
+	data = (1 << (8*15)) #HAVE TO DELETE THIS
+	
 	firstByte = (data & (0xFF << (8*15))) >> (8*15)
 	
 	answ=0 # should delete later
@@ -114,9 +114,8 @@ def doProcessing(data):
 		answ = triggerAck(data)
 	else:
 		return None
-	
-	print "calculated answer is: %s" % numToString(stringToNum("abc"), 3)
-	return answ
+
+	return numToString(answ, 16)
 
 #First of all we gonna make sure, that we got only one argument, and that it's a number.
 
