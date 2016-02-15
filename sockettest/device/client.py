@@ -35,10 +35,27 @@ class processThread (threading.Thread):
 		data = self.conn.recv(16)
 		doProcessing(data)
 		self.conn.close()
+		
+def getMac():
+	try:
+		mac_str = open('/sys/class/net/eth0/address').readline()
+	except:
+		mac_str = "00:00:00:00:00:00"
+	
+	mac_str = mac_str.translate(None, ":")
+	mac = int(mac_str, 16)
+	
+	
+	return mac
+  
+def initDevice():
+	pass
 
 def doProcessing(data):
 	#btw this is the place where we'll reference the listener functions
-	print "Received: %s" % data
+	
+	print "MAC: %s" % getMac()
+
 
 #First of all we gonna make sure, that we got only one argument, and that it's a number.
 
