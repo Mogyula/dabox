@@ -80,14 +80,14 @@ def stringToNum(s):
 	num = 0
 	for i in range(0,len(s),1):
 		num += (ord(s[i]) << 8*(len(s)-1-i))
-		print num
 	return num
-'''
-def numToString(num):
+
+def numToString(num, length):
 	s = ""
-	for i in range(0, 16, 1):
-		num & (0xFF) <<
-'''
+	for i in range(length-1, -1, -1):
+		s += chr((num & ((0xFF) << (i*8))) >> (i*8))
+	return s
+
 def doProcessing(data):
 	#we should convert the string to a huge number
 	
@@ -115,7 +115,7 @@ def doProcessing(data):
 	else:
 		return None
 	
-	print "calculated answer is: %04x" % stringToNum("abcde")
+	print "calculated answer is: %s" % numToString(stringToNum("abc"), 3)
 	return answ
 
 #First of all we gonna make sure, that we got only one argument, and that it's a number.
