@@ -79,12 +79,15 @@ def triggerAck(data):
 def stringToNum(s):
 	num = 0
 	for i in range(0,len(s),1):
-		print s[i]
-		print i
-		num += ord(s[i])*(2**((len(s)-1-i)*8))
+		num += (ord(s[i]) << 8*(len(s)-1-i))
 		print num
 	return num
-
+'''
+def numToString(num):
+	s = ""
+	for i in range(0, 16, 1):
+		num & (0xFF) <<
+'''
 def doProcessing(data):
 	#we should convert the string to a huge number
 	
