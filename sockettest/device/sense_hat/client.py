@@ -5,6 +5,7 @@ import socket
 import struct
 from os import listdir
 from os.path import isfile, join
+import driver
 
 #TODO: error handling
 
@@ -63,6 +64,7 @@ def deactivateAll():
 		trigger = False
 
 def initDevice():
+	#triggerargs should be loaded from file
 	deactivateAll()
 
 def sendId():
@@ -86,7 +88,6 @@ def setArg(data):
 	triggerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
 	argId = (data & (0xFFFFFFFF << (7*8))) >> (7*8)
 	argValue = (data & (0xFFFFFFFF << (3*8))) >> (3*8)
-	
 	try:
 		triggers = [f for f in listdir("./triggers") if not isfile(join("./triggers", f))].sort()
 		args = [f for f in listdir("./triggers/"+triggers[triggerId]) if isfile(join("./triggers"+triggers[triggerId], f))].sort()
@@ -96,7 +97,7 @@ def setArg(data):
 		triggerArgs[triggerId, argId] = argValue
 	except:
 		return None
-	return (9 << (15*8)) + (getMac() << (12*8)) + (argId << (3*8))
+	return (9 << (15*8)) + (getMac() << (7*8)) + (argId << (3*8))
 
 def activateTrigger(data):
 	triggerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
@@ -105,10 +106,9 @@ def activateTrigger(data):
 	return (10 << (15*8)) + (getMac() << (7*8)) + (triggerId << (3*8))
 
 def handleTrigger(data):
-	pass
-	
-def triggerAck(data):
-	pass
+	listenerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
+	driver.handlerFunctions[listenerId]() #calling the listener function
+	return (13 << (15*8)) + (getMac() << (7*8)) + (listenerId << (3*8))
 
 def stringToNum(s):
 	num = 0
@@ -144,8 +144,6 @@ def doProcessing(data):
 		answ = activateTrigger(data)
 	elif firstByte == 11:
 		answ = handleTrigger(data)
-	elif firstByte == 13:
-		answ = triggerAck(data)
 	else:
 		return None
 
