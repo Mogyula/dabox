@@ -24,7 +24,7 @@ b. During the setup process
 		[5]		[TRIGGER_ID]	[ARG_ID]	[ARG_VALUE]		[0]
 		 1.	   		2.-5.		  6.-9.			10.-13.	   14.-16.
 	6 --> "Activate a trigger." //We are marking a trigger function as active
-		[5]		[TRIGGER_ID]	[0]
+		[6]		[TRIGGER_ID]	[0]
 		 1.	   		2.-5.	  6.-16.
 	
 	----Acknowledging----
@@ -51,18 +51,23 @@ c. Triggering.
 		 1.	   		2.-5.	   6.-16.
 
 	12 --> "Triggering da box."
-		[12]	[TRIGGER_ID]	[0] 
+		[12]	[LISTENER_ID]	[0] 
 		 1.	   		2.-5.	   6.-16.
 
 	----Acknowledging----
 	
 	13 --> "Got your trigger /from the box./"
-		[13]	[DEVICE_ID]		[TRIGGER_ID]	[0] 
+		[13]	[DEVICE_ID]		[LISTENER_ID]	[0] 
 		 1.	   		2.-9.	   	   10.-13.	   14.-16.
 		 
 	14 --> "Got your trigger /from a device./"
 		[14]	[DEVICE_ID]		[LISTENER_ID]	[0] 
 		 1.	   		2.-9.	   	   10.-13.	   14.-16.
+		 
+d. Error
+	15 --> "There was an error."
+		[15]	[0]
+		 1.	   2.-16.
 		 
 NOTES:
 The acknowledge messages contain the device ID, so we can check on da box, if it's IP has changed, and rearrange stuff if so.

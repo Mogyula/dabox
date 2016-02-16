@@ -4,7 +4,7 @@ import threading
 import socket
 import struct
 from os import listdir
-from os.path import isfile, join
+from os.path import isfile, isdir, join
 import driver
 
 #TODO: error handling
@@ -44,8 +44,7 @@ class processThread (threading.Thread):
 		print "Connected to %s:%s" % (self.addr[0], self.addr[1])
 		data = self.conn.recv(16)
 		answ = doProcessing(data)
-		if answ != None:
-			self.conn.send(answ)
+		self.conn.send(answ)
 		self.conn.close()
 		
 def getMac():
@@ -66,6 +65,7 @@ def deactivateAll():
 def initDevice():
 	#triggerargs should be loaded from file
 	deactivateAll()
+	#we should zero out the triggerStates array
 
 def sendId():
 	return (2 << (15*8)) + (getMac() << (7*8))
@@ -89,11 +89,13 @@ def setArg(data):
 	argId = (data & (0xFFFFFFFF << (7*8))) >> (7*8)
 	argValue = (data & (0xFFFFFFFF << (3*8))) >> (3*8)
 	try:
-		triggers = [f for f in listdir("./triggers") if not isfile(join("./triggers", f))].sort()
-		args = [f for f in listdir("./triggers/"+triggers[triggerId]) if isfile(join("./triggers"+triggers[triggerId], f))].sort()
-		arg_file = open("./triggers/"+triggers[triggerId]+"/"+args[argId], "w+")
-		f.write("%d\n" % argValue)
-		f.close()
+		triggers = [f for f in listdir("./triggers") if isdir(join("./triggers", f))]
+		triggers.sort()
+		args = [f for f in listdir("./triggers/"+triggers[triggerId-1]) if isfile(join("./triggers/"+triggers[triggerId-1], f))]
+		args.sort()
+		arg_file = open("./triggers/"+triggers[triggerId-1]+"/"+args[argId-1], "w+")
+		arg_file.write("%d\n" % argValue)
+		arg_file.close()
 		triggerArgs[triggerId, argId] = argValue
 	except:
 		return None
@@ -102,7 +104,6 @@ def setArg(data):
 def activateTrigger(data):
 	triggerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
 	triggerStates[triggerId] = True
-	
 	return (10 << (15*8)) + (getMac() << (7*8)) + (triggerId << (3*8))
 
 def handleTrigger(data):
@@ -123,14 +124,8 @@ def numToString(num, length):
 	return s
 
 def doProcessing(data):
-	#we should convert the string to a huge number
-	
-	#btw this is the place where we'll reference the listener functions
-	data = (1 << (8*15)) #HAVE TO DELETE THIS
-	
-	firstByte = (data & (0xFF << (8*15))) >> (8*15)
-	
-	answ=0 # should delete later
+	dataNum=stringToNum(data)
+	firstByte = (dataNum & (0xFF << (8*15))) >> (8*15)
 	
 	if firstByte == 1:
 		answ = sendId()
@@ -139,13 +134,13 @@ def doProcessing(data):
 	elif firstByte == 4:
 		answ = startExec()
 	elif firstByte == 5:
-		answ = setArg(data)
+		answ = setArg(dataNum)
 	elif firstByte == 6:
-		answ = activateTrigger(data)
+		answ = activateTrigger(dataNum)
 	elif firstByte == 11:
-		answ = handleTrigger(data)
+		answ = handleTrigger(dataNum)
 	else:
-		return None
+		answ = 15 << (15*8) # because then there was an error
 
 	return numToString(answ, 16)
 
@@ -157,6 +152,8 @@ if not (len(sys.argv)==2 and sys.argv[1].isdigit()):
 
 port = int(sys.argv[1])
 deviceId = 0
+
+initDevice()
 
 fromBoxThread(port).start()
 toBoxThread(port).start()
