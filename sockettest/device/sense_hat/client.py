@@ -1,9 +1,13 @@
-#!/usr/bin/python           
+#!/usr/bin/python
 import sys
 import threading
 import socket
 import struct
-from ctypes import create_string_buffer
+from os import listdir
+from os.path import isfile, join
+
+triggerArgs = {} #this will be the dictionary containing all the args
+triggerStates = {} # this will specify if a trigger is active.
 
 class toBoxThread (threading.Thread):
 	def __init__(self, data):
@@ -59,14 +63,32 @@ def sendId():
 	return (2 << (15*8)) + (getMac() << (7*8))
 	
 def initSetupMode():
-	pass
+	#here we'll have to arrange all the stuff before switching to setup mode
+	#maybe we'll cal an other function in an other file before returning
+	return (7 << (15*8)) + (getMac() << (7*8))
 
 def startExec():
-	pass
+	#basicly the startup stuff
+	#maybe we'll cal an other function in an other file before returning
+	return (8 << (15*8)) + (getMac() << (7*8))
 
 def setArg(data):
-	pass
+	#we got the trigegr_ ID, arg_ID, and arg_value.
+	#basically we just collect stuff and then pass it somewhere global,
+	#so functions can access it.
+	triggerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
+	argId = (data & (0xFFFFFFFF << (7*8))) >> (7*8)
+	argValue = (data & (0xFFFFFFFF << (3*8))) >> (3*8)
 	
+	triggers = [f for f in listdir("./triggers") if not isfile(join("./triggers", f))].sort()
+	args = [f for f in listdir("./triggers/"+triggers[triggerId]) if isfile(join("./triggers"+triggers[triggerId], f))].sort()
+	arg_file = open("./triggers/"+triggers[triggerId]+"/"+args[argId], "rw")
+	f.write("%d\n" % argValue)
+	f.close()
+	triggerArgs[triggerId, argId] = argValue
+	
+	return (9 << (15*8)) + (getMac() << (12*8)) + (argId << (3*8))
+
 def activateTrigger(data):
 	pass
 

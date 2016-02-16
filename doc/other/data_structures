@@ -22,7 +22,7 @@ b. During the setup process
 		 1.	   2.-16.
 	5 --> "Set argument value!" //We are setting an argument of a trigger function to a specified value.
 		[5]		[TRIGGER_ID]	[ARG_ID]	[ARG_VALUE]		[0]
-		 1.	   		2.-5.		  5.-8.			9.-12.	   13.-16.
+		 1.	   		2.-5.		  6.-9.			10.-13.	   14.-16.
 	6 --> "Activate a trigger." //We are marking a trigger function as active
 		[5]		[TRIGGER_ID]	[0]
 		 1.	   		2.-5.	  6.-16.
