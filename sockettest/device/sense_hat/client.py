@@ -6,6 +6,8 @@ import struct
 from os import listdir
 from os.path import isfile, join
 
+#TODO: error handling
+
 triggerArgs = {} #this will be the dictionary containing all the args
 triggerStates = {} # this will specify if a trigger is active.
 
@@ -56,20 +58,25 @@ def getMac():
 	
 	return mac
 
+def deactivateAll():
+	for trigger in triggerStates:
+		trigger = False
+
 def initDevice():
-	pass
-	
+	deactivateAll()
+
 def sendId():
 	return (2 << (15*8)) + (getMac() << (7*8))
 	
 def initSetupMode():
 	#here we'll have to arrange all the stuff before switching to setup mode
-	#maybe we'll cal an other function in an other file before returning
+	#maybe we'll call an other function in an other file before returning
+	deactivateAll()
 	return (7 << (15*8)) + (getMac() << (7*8))
 
 def startExec():
 	#basicly the startup stuff
-	#maybe we'll cal an other function in an other file before returning
+	#maybe we'll call an other function in an other file before returning
 	return (8 << (15*8)) + (getMac() << (7*8))
 
 def setArg(data):
@@ -80,17 +87,22 @@ def setArg(data):
 	argId = (data & (0xFFFFFFFF << (7*8))) >> (7*8)
 	argValue = (data & (0xFFFFFFFF << (3*8))) >> (3*8)
 	
-	triggers = [f for f in listdir("./triggers") if not isfile(join("./triggers", f))].sort()
-	args = [f for f in listdir("./triggers/"+triggers[triggerId]) if isfile(join("./triggers"+triggers[triggerId], f))].sort()
-	arg_file = open("./triggers/"+triggers[triggerId]+"/"+args[argId], "rw")
-	f.write("%d\n" % argValue)
-	f.close()
-	triggerArgs[triggerId, argId] = argValue
-	
+	try:
+		triggers = [f for f in listdir("./triggers") if not isfile(join("./triggers", f))].sort()
+		args = [f for f in listdir("./triggers/"+triggers[triggerId]) if isfile(join("./triggers"+triggers[triggerId], f))].sort()
+		arg_file = open("./triggers/"+triggers[triggerId]+"/"+args[argId], "w+")
+		f.write("%d\n" % argValue)
+		f.close()
+		triggerArgs[triggerId, argId] = argValue
+	except:
+		return None
 	return (9 << (15*8)) + (getMac() << (12*8)) + (argId << (3*8))
 
 def activateTrigger(data):
-	pass
+	triggerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
+	triggerStates[triggerId] = True
+	
+	return (10 << (15*8)) + (getMac() << (7*8)) + (triggerId << (3*8))
 
 def handleTrigger(data):
 	pass
