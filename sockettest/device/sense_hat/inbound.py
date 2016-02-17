@@ -2,41 +2,21 @@
 import sys
 import threading
 import socket
-import struct
 from os import listdir
 from os.path import isfile, isdir, join
+
 import driver
+from conversion import stringToNum, numToString
 
 #TODO: error handling
-
-triggerArgs = {} #this will be the dictionary containing all the args
-triggerStates = {} # this will specify if a trigger is active.
-
-class runMainCycle ():
-	def __init__(self, data):
-		threading.Thread.__init__(self)
-		self.data=data
-	def run(self):
-		pass
-		#Here we'll send self.data
-
-class toBoxThread (threading.Thread):
-	def __init__(self, data):
-		threading.Thread.__init__(self)
-		self.data=data
-	def run(self):
-		pass
-		#Here we'll send self.data
 
 class fromBoxThread (threading.Thread):
 	def __init__(self, port):
 		threading.Thread.__init__(self)
+		self.port = port
 	def run(self):
-		fromBoxPort = port;
-		toBoxPort = port + 1; 
-
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		s.bind(('', fromBoxPort))
+		s.bind(('', self.port))
 		s.listen(3)
 
 		while 1:
@@ -67,13 +47,8 @@ def getMac():
 	return mac
 
 def deactivateAll():
-	for trigger in triggerStates:
+	for trigger in driver.triggerStates:
 		trigger = False
-
-def initDevice():
-	#triggerargs should be loaded from file
-	deactivateAll()
-	#we should zero out the triggerStates array
 
 def sendId():
 	return (2 << (15*8)) + (getMac() << (7*8))
@@ -104,14 +79,14 @@ def setArg(data):
 		arg_file = open("./triggers/"+triggers[triggerId-1]+"/"+args[argId-1], "w+")
 		arg_file.write("%d\n" % argValue)
 		arg_file.close()
-		triggerArgs[triggerId, argId] = argValue
+		driver.triggerArgs[triggerId, argId] = argValue
 	except:
 		return None
 	return (9 << (15*8)) + (getMac() << (7*8)) + (argId << (3*8))
 
 def activateTrigger(data):
 	triggerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
-	triggerStates[triggerId] = True
+	driver.triggerStates[triggerId] = True
 	return (10 << (15*8)) + (getMac() << (7*8)) + (triggerId << (3*8))
 
 def handleTrigger(data):
@@ -121,18 +96,6 @@ def handleTrigger(data):
 	except:
 		return 15 << (15*8)
 	return (13 << (15*8)) + (getMac() << (7*8)) + (listenerId << (3*8))
-
-def stringToNum(s):
-	num = 0
-	for i in range(0,len(s),1):
-		num += (ord(s[i]) << 8*(len(s)-1-i))
-	return num
-
-def numToString(num, length):
-	s = ""
-	for i in range(length-1, -1, -1):
-		s += chr((num & ((0xFF) << (i*8))) >> (i*8))
-	return s
 
 def doProcessing(data):
 	dataNum=stringToNum(data)
@@ -162,10 +125,8 @@ if not (len(sys.argv)==2 and sys.argv[1].isdigit()):
 	sys.exit()
 
 port = int(sys.argv[1])
-deviceId = 0
 
 initDevice()
 
 fromBoxThread(port).start()
-toBoxThread(port).start()
 

@@ -1,6 +1,19 @@
 #This file is the one that needs to be generated!
 
-###Listeners############################################################
+import outbound
+import inbound
+
+#here we'll need to reach these tings: 
+#arguments, and triggering thread
+
+triggerArgs = {}
+triggerStates = {}
+
+### Arguments ##########################################################
+
+pitchOver_degs = 
+
+### Listeners ##########################################################
 
 def writeTemp():
 	print "ran writeTemp"
@@ -9,11 +22,16 @@ def writeTemp():
 def glowBlue():
 	print "ran glowBlue"
 
-###Main cycle###########################################################
+### Main cycle #########################################################
 
 def mainCycle():
 	pass
 
-###Constants############################################################
+### Device initialisation code #########################################
+
+def initDevice():
+	pass
+
+### Constants ##########################################################
 
 handlerFunctions = [writeTemp, glowBlue]
