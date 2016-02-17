@@ -12,6 +12,14 @@ import driver
 triggerArgs = {} #this will be the dictionary containing all the args
 triggerStates = {} # this will specify if a trigger is active.
 
+class runMainCycle ():
+	def __init__(self, data):
+		threading.Thread.__init__(self)
+		self.data=data
+	def run(self):
+		pass
+		#Here we'll send self.data
+
 class toBoxThread (threading.Thread):
 	def __init__(self, data):
 		threading.Thread.__init__(self)
@@ -108,7 +116,10 @@ def activateTrigger(data):
 
 def handleTrigger(data):
 	listenerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
-	driver.handlerFunctions[listenerId]() #calling the listener function
+	try:
+		driver.handlerFunctions[listenerId-1]() #calling the listener function
+	except:
+		return 15 << (15*8)
 	return (13 << (15*8)) + (getMac() << (7*8)) + (listenerId << (3*8))
 
 def stringToNum(s):

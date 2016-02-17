@@ -3,10 +3,11 @@
 ###Listeners############################################################
 
 def writeTemp():
-	pass
+	print "ran writeTemp"
+	raise
 	
 def glowBlue():
-	pass
+	print "ran glowBlue"
 
 ###Main cycle###########################################################
 
