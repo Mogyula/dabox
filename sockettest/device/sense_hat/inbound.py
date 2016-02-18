@@ -1,12 +1,11 @@
 #!/usr/bin/python
-import sys
 import threading
 import socket
 from os import listdir
 from os.path import isfile, isdir, join
 
-import driver
-from conversion import stringToNum, numToString
+import globaldef
+from conversion import numToString, stringToNum
 
 #TODO: error handling
 
@@ -47,8 +46,7 @@ def getMac():
 	return mac
 
 def deactivateAll():
-	for trigger in driver.triggerStates:
-		trigger = False
+	globaldef.deactivateAll()
 
 def sendId():
 	return (2 << (15*8)) + (getMac() << (7*8))
@@ -56,7 +54,7 @@ def sendId():
 def initSetupMode():
 	#here we'll have to arrange all the stuff before switching to setup mode
 	#maybe we'll call an other function in an other file before returning
-	deactivateAll()
+	globaldef.deactivateAll()
 	return (7 << (15*8)) + (getMac() << (7*8))
 
 def startExec():
@@ -71,28 +69,20 @@ def setArg(data):
 	triggerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
 	argId = (data & (0xFFFFFFFF << (7*8))) >> (7*8)
 	argValue = (data & (0xFFFFFFFF << (3*8))) >> (3*8)
-	try:
-		triggers = [f for f in listdir("./triggers") if isdir(join("./triggers", f))]
-		triggers.sort()
-		args = [f for f in listdir("./triggers/"+triggers[triggerId-1]) if isfile(join("./triggers/"+triggers[triggerId-1], f))]
-		args.sort()
-		arg_file = open("./triggers/"+triggers[triggerId-1]+"/"+args[argId-1], "w+")
-		arg_file.write("%d\n" % argValue)
-		arg_file.close()
-		driver.triggerArgs[triggerId, argId] = argValue
-	except:
-		return None
-	return (9 << (15*8)) + (getMac() << (7*8)) + (argId << (3*8))
+	if globaldef.triggers.setArg(triggerId, argId, argValue):
+		return (9 << (15*8)) + (getMac() << (7*8)) + (argId << (3*8))
+	else:
+		return 15 << (15*8)
 
 def activateTrigger(data):
 	triggerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
-	driver.triggerStates[triggerId] = True
+	globaldef.triggerStates[triggerId] = True
 	return (10 << (15*8)) + (getMac() << (7*8)) + (triggerId << (3*8))
 
 def handleTrigger(data):
 	listenerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
 	try:
-		driver.handlerFunctions[listenerId-1]() #calling the listener function
+		globaldef.handlerFunctions[listenerId-1]() #calling the listener function
 	except:
 		return 15 << (15*8)
 	return (13 << (15*8)) + (getMac() << (7*8)) + (listenerId << (3*8))
@@ -118,15 +108,5 @@ def doProcessing(data):
 
 	return numToString(answ, 16)
 
-#First of all we gonna make sure, that we got only one argument, and that it's a number.
 
-if not (len(sys.argv)==2 and sys.argv[1].isdigit()):
-	print "Usage: %s [portno]" % sys.argv[0]
-	sys.exit()
-
-port = int(sys.argv[1])
-
-initDevice()
-
-fromBoxThread(port).start()
 

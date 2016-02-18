@@ -1,23 +1,14 @@
 #This file is the one that needs to be generated!
+import globaldef
 
-import outbound
-import inbound
+### Custom imports #####################################################
 
-#here we'll need to reach these tings: 
-#arguments, and triggering thread
 
-triggerArgs = {}
-triggerStates = {}
-
-### Arguments ##########################################################
-
-pitchOver_degs = 
 
 ### Listeners ##########################################################
 
 def writeTemp():
 	print "ran writeTemp"
-	raise
 	
 def glowBlue():
 	print "ran glowBlue"
