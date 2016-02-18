@@ -52,7 +52,7 @@ class triggerMap:
 			trigger.state = False
 	def getTriggerId(self,triggerName):
 		for trigger in self.triggers:
-			if trigger.name == triggername:
+			if trigger.name == triggerName:
 				return trigger.no
 	def getTriggerState(self,triggerName):
 		return self.triggers[self.getTriggerId(triggerName)-1].state
