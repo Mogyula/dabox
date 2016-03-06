@@ -10,8 +10,8 @@ a. When scanning for available devices:
 		 1.	   2.-16. //byte order
 		
 	2 --> "I am..." //sent to the control box
-		[2]		[DEVICE_ID]		[0]
-		 1.	   		2.-9.	  10.-16.
+		[2]		[DEVICE_ID]	   [TYPE_ID]	  [0]
+		 1.	   	   2.-9.	    10.-13.	14.-16.
 
 b. During the setup process
 	3 --> "Fall to setup mode." //So fail-critical devices can prepare, and return tho their defaults, etc.
