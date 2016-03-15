@@ -61,7 +61,7 @@ c. Triggering.
 		 1.	   		2.-9.	   	   10.-13.	   14.-16.
 		 
 	14 --> "Got your trigger /from a device./"
-		[14]	[DEVICE_ID]		[LISTENER_ID]	[0] 
+		[14]	[DEVICE_ID]		[TRIGGER_ID]	[0] 
 		 1.	   		2.-9.	   	   10.-13.	   14.-16.
 		 
 d. Error
