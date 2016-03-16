@@ -51,8 +51,8 @@ c. Triggering.
 		 1.	   		2.-5.	   6.-16.
 
 	12 --> "Triggering da box."
-		[12]	[TRIGGER_ID]	[0] 
-		 1.	   		2.-5.	   6.-16.
+		[12]	[TRIGGER_ID]	[ARG_ID | 0]  	[0]
+		 1.	   		2.-5.	   	    6.-9.	   10.-16.
 
 	----Acknowledging----
 	
