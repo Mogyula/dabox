@@ -20,51 +20,38 @@ class arg:
 		self.val=val
 		
 class triggerMap:
-	def __init__(self, triggers):
-		self.triggers = triggers
+	def __init__(self):
+		self.triggers = None
+		self.initTriggers()
 		
 	def initTriggers(self):
+		self.triggers = None
 		try:
 			for triggerDir in os.listdir("./triggers/"):
 				triggerNo = int(triggerDir[0:triggerDir.find('_')])
 				triggerName = triggerDir[triggerDir.find('_'):]
-				for preset in os.listdir("./triggers/"+triggerDir+"set/"): #TODO: check files/dirs only where neccesary
+				for preset in os.listdir("./triggers/"+triggerDir+"/set/"): #TODO: check files/dirs only where neccesary
 					args = dict()
-					for presetFile in os.listdir("./triggers/"+triggerDir+"set/"+preset):
+					for presetFile in os.listdir("./triggers/"+triggerDir+"/set/"+preset):
 						if presetFile != "state":
 							argNo = int(presetFile[0:presetFile.find('_')])
 							argName = presetFile[presetFile.find('_'):]
-							#now we should get the actual value
-							f = open("./triggers/"+triggerDir+"set/"+preset+"/"+presetFile)
+							#now we should get the actual value			
+							f = open("./triggers/"+triggerDir+"/set/"+preset+"/"+presetFile)
 							argVal = int(f.readline())
 							f.close()
 							args[argNo] = arg(argName, argVal)
-					self.triggers = self.triggers + trigger(triggerNo, int(preset), triggerName, False, args)
-					
-		except:
+					self.triggers = self.triggers + trigger(triggerNo, int(preset), triggerName, args)
+			print(self.triggers)
+		except Exception as e:
+			print(e)
 			return None
 			#basically we will navigate the "triggers" directory and fill up the 
 		
 	def initStates(self):
-		try:
-			for trigger in self.triggers:
-				f = open("./triggers/"+str(trigger.no)+"_"+trigger.name+"/state", "r")
-				trigger.state = int(f.readline())
-				if state:
-					trigger.state = True
-				else:
-					trigger.state = False
-		except:
-			return None
-			
-	def initArgs(self):
-		try:
-			for trigger in self.triggers:
-				for argno, arg in enumerate(trigger.args):
-					f = open("./triggers/"+str(trigger.no)+"_"+trigger.name+"/"+str(argno)+"_"+arg.name, "r")
-					arg.val = int(f.readline())
-		except:
-			return None
+		#we should iterate over the triggers,a nd set everything to false
+		for trigger in self.triggers:
+			trigger.state = False
 			
 	def setState(self,triggerId):
 		
@@ -104,5 +91,4 @@ class triggerMap:
 
 port = None # init script will set it
 					   
-triggers.initStates()
-triggers.initArgs()
+triggerContainer=triggerMap()

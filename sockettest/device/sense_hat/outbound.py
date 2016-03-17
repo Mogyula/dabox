@@ -17,3 +17,4 @@ class sendTrigger (threading.Thread):
 		s.connect(('192.168.0.198', self.port))
 		s.sendall(numToString(message,16))
 		s.close()
+
