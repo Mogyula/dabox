@@ -50,7 +50,7 @@ def mainCycle():
 			sense.set_pixel(x_pos,y_pos,0,0,255)
 		else:
 			sense.set_pixel(x_pos,y_pos,255,0,0)
-			sendTrigger("pitchOver")
+			sendTrigger("pitchOver") #todo set this to a value
 
 ### Device initialisation code #########################################
 

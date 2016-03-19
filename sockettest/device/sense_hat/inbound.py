@@ -55,6 +55,7 @@ def initSetupMode():
 	#here we'll have to arrange all the stuff before switching to setup mode
 	#maybe we'll call an other function in an other file before returning
 	globaldef.deactivateAll()
+	#TODO plus we have to delete all the triggers
 	return (7 << (15*8)) + (getMac() << (7*8))
 
 def startExec():

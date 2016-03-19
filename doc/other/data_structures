@@ -21,8 +21,8 @@ b. During the setup process
 		[4]		[0]
 		 1.	   2.-16.
 	5 --> "Set argument value!" //We are setting an argument of a trigger function to a specified value.
-		[5]		[TRIGGER_ID]  [ARG_VALUE]	[VARIANT | 0]	[0]
-		 1.		   2.-5.	   	  6.-9.	        10.-13.    14.-15.
+		[5]		[TRIGGER_ID]  [ARG_VALUE] 		 [0]
+		 1.		   2.-5.	   	  6.-9.	        10.-15.
 	6 --> "Activate a trigger." //We are marking a trigger function as active
 		[6]		[TRIGGER_ID]	[0]
 		 1.	   		2.-5.	  6.-16.
@@ -38,8 +38,8 @@ b. During the setup process
 		 1.	   		2.-9.	  10.-16.
 		 
 	9 --> "Argument value has been set."
-		[9]		[DEVICE_ID]		[TRIGGER_ID]       [VARIANT]	[0]
-		 1.	   		2.-9.	  	   10.-13.			14.-15.		16.
+		[9]		[DEVICE_ID]		[TRIGGER_ID]          [0]
+		 1.	   		2.-9.	  	   10.-13.			14.-16.
 		 
 	10 --> "Trigger has been activated."
 		[10]	[DEVICE_ID]		[TRIGGER_ID]	  [0]
@@ -51,7 +51,7 @@ c. Triggering.
 		 1.	   		2.-5.	   6.-16.
 
 	12 --> "Triggering da box."
-		[12]	[TRIGGER_ID]	[VARIANT | 0]  	[0]
+		[12]	[TRIGGER_ID]	   [ARG]  	      [0]
 		 1.	   		2.-5.	   		6.-7.       8.-16.
 
 	----Acknowledging----
