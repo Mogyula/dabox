@@ -52,31 +52,24 @@ def sendId():
 	return (2 << (15*8)) + (getMac() << (7*8))
 	
 def initSetupMode():
-	#here we'll have to arrange all the stuff before switching to setup mode
-	#maybe we'll call an other function in an other file before returning
-	globaldef.deactivateAll()
-	#TODO plus we have to delete all the triggers
+	globaldef.stopExec()
 	return (7 << (15*8)) + (getMac() << (7*8))
 
 def startExec():
-	#basicly the startup stuff
-	#maybe we'll call an other function in an other file before returning
+	globaldef.startExec()
 	return (8 << (15*8)) + (getMac() << (7*8))
 
 def setArg(data):
-	#we got the trigegr_ ID, arg_ID, and arg_value.
-	#basically we just collect stuff and then pass it somewhere global,
-	#so functions can access it.
 	triggerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
-	argId = (data & (0xFFFFFFFF << (7*8))) >> (7*8)
-	argValue = (data & (0xFFFFFFFF << (3*8))) >> (3*8)
-	if globaldef.triggers.setArg(triggerId, argId, argValue):
-		return (9 << (15*8)) + (getMac() << (7*8)) + (argId << (3*8))
+	argValue = (data & (0xFFFFFFFF << (7*8))) >> (7*8)
+	if globaldef.triggers.setArg(triggerId, argValue):
+		return (9 << (15*8)) + (getMac() << (7*8)) + (triggerId << (3*8)) + (argId << (1*8))
 	else:
 		return 15 << (15*8)
 
 def activateTrigger(data):
 	triggerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
+	argVal = data >> (9*8))
 	globaldef.triggerStates[triggerId] = True
 	return (10 << (15*8)) + (getMac() << (7*8)) + (triggerId << (3*8))
 

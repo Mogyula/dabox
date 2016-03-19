@@ -13,5 +13,9 @@ driver.initDevice()
 
 inbound.fromBoxThread(globaldef.port).start() #hanling incoming requests
 
+
 while 1:
-	driver.mainCycle() #handling everything else
+	while globaldef.runState:
+		globaldef.execStopped=False
+		driver.mainCycle() #handling everything else
+	globaldef.execStopped=True #so we can wait for the cycle to finish.
