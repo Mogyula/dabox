@@ -47,12 +47,12 @@ b. During the setup process
 		 
 c. Triggering.
 	11 --> "Triggering device."
-		[11]	[LISTENER_ID]	[0] 	//The listener of the device, of course.
-		 1.	   		2.-5.	   6.-16.
+		[11]	[LISTENER_ID] 	  [ARG|0]		[0] 	//The listener of the device, of course.
+		 1.	   		2.-5.	   		6.-7.	   6.-16.
 
 	12 --> "Triggering da box."
-		[12]	[TRIGGER_ID]	   [ARG]  	      [0]
-		 1.	   		2.-5.	   		6.-7.       8.-16.
+		[12]	[TRIGGER_ID]	     [0]
+		 1.	   		2.-5.	   		6.-16.
 
 	----Acknowledging----
 	

@@ -79,6 +79,16 @@ class TriggerMap:
 		except:
 			traceback.print_exc()
 			return 
+	
+	def getTrigger(self, triggerId, triggerVal):
+		if triggerVal == None:
+			for trigger in self.triggers:
+				if trigger.triggerId == triggerId:
+					return trigger
+		else:
+			for trigger in self.triggers:
+				if trigger.triggerId == triggerId and trigger.arg.val == triggerVal:
+					return trigger
 			
 	def getSchema(self, triggerId):
 		for schema in self.schemas:
@@ -91,13 +101,22 @@ class TriggerMap:
 		for trigger in self.triggers:
 			trigger.state = False
 			
-	def setState(self, triggerId, subno):
-		#TODO: reneme this to setTrigger?
-		#Basically we have to create the same triggers with different arguments if they were given.
-		#TODO: write this to the status file
-		for trigger in self.triggers:
-			if trigger.triggerId == triggerId and trigger.subno == subno:
-				trigger.state=True
+	def activateTrigger(self, triggerId, triggerVal):
+		#we should check if the trigger has arg.
+		sch = getSchema(triggerId)
+		try:
+		if sch != None: #that would mean, that there is no trigger with such id.
+			if sch.argName == None: #so it has no args after all
+				f=open("./triggers/"+str(triggerId)+"_"+sch.triggerName+"/set/state","w")
+				f.write("1")
+				f.close()
+			else: #so it has an argument
+				f=open("./triggers/"+str(triggerId)+"_"+sch.triggerName+"/set/"+str(countVariants(triggerId)+1)+"/state","w")
+				f.write("1")
+				f.close()
+		except:
+			traceback.print_exc()
+			return None
 			
 	def setArg(self, triggerId, argValue):
 		#should we check if it's the same as in the scheme?
@@ -166,6 +185,7 @@ class TriggerMap:
 			if trigger.name == triggerName and trigger.arg.val == argVal:
 				return True
 		return False
+		
 
 triggerMap=TriggerMap()
 

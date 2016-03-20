@@ -70,8 +70,10 @@ def setArg(data):
 def activateTrigger(data):
 	triggerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
 	argVal = data >> (9*8))
-	globaldef.triggerStates[triggerId] = True
-	return (10 << (15*8)) + (getMac() << (7*8)) + (triggerId << (3*8))
+	if globaldef.triggerMap.activateTrigger(triggerId, argVal) != None:
+		return (10 << (15*8)) + (getMac() << (7*8)) + (triggerId << (3*8))
+	else:
+		return 15 << (15*8)
 
 def handleTrigger(data):
 	listenerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
