@@ -1,5 +1,6 @@
 #This file is the one that needs to be generated!
 import globaldef
+from threading import Thread
 from outbound import sendTrigger
 
 ### Custom imports #####################################################
@@ -17,6 +18,8 @@ def glowBlue():
 ### Main cycle #########################################################
 
 def mainCycle():
+	pass
+	'''
 	maxDegs = 30
 	
 	sense = SenseHat()
@@ -51,7 +54,7 @@ def mainCycle():
 		else:
 			sense.set_pixel(x_pos,y_pos,255,0,0)
 			sendTrigger("pitchOver") #todo set this to a value
-
+		'''
 ### Device initialisation code #########################################
 
 def initDevice():

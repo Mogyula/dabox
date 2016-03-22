@@ -17,7 +17,6 @@ class fromBoxThread (threading.Thread):
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		s.bind(('', self.port))
 		s.listen(3)
-
 		while 1:
 			conn, addr = s.accept()
 			processThread(conn, addr).start()
@@ -39,61 +38,59 @@ def getMac():
 		macStr = open('/sys/class/net/eth0/address').readline()
 	except:
 		macStr = "00:00:00:00:00:00"
-	
 	macStr = macStr.translate(None, ":")
 	mac = int(macStr, 16)
-	
 	return mac
-
-def deactivateAll():
-	globaldef.deactivateAll()
 
 def sendId():
 	return (2 << (15*8)) + (getMac() << (7*8))
 	
 def initSetupMode():
-	globaldef.stopExec()
-	return (7 << (15*8)) + (getMac() << (7*8))
+	if globaldef.stopExec():
+		return (7 << (15*8)) + (getMac() << (7*8))
+	return 15 << (15*8)
 
 def startExec():
-	globaldef.startExec()
-	return (8 << (15*8)) + (getMac() << (7*8))
+	if globaldef.startExec():
+		return (8 << (15*8)) + (getMac() << (7*8))
+	return 15 << (15*8)
 
 def setArg(data):
-	triggerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
-	argValue = (data & (0xFFFFFFFF << (7*8))) >> (7*8)
-	if globaldef.triggers.setArg(triggerId, argValue):
-		return (9 << (15*8)) + (getMac() << (7*8)) + (triggerId << (3*8)) + (argId << (1*8))
+	triggerId = (data >> (13*8)) & 0xFFFF
+	argValue = (data >> (9*8)) & 0xFFFFFFFF
+	if globaldef.triggerMap.setArg(triggerId, argValue):
+		return (9 << (15*8)) + (getMac() << (7*8)) + (triggerId << (5*8)) + (argValue << (1*8))
 	else:
 		return 15 << (15*8)
 
 def activateTrigger(data):
-	triggerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
-	argVal = data >> (9*8))
-	if globaldef.triggerMap.activateTrigger(triggerId, argVal) != None:
-		return (10 << (15*8)) + (getMac() << (7*8)) + (triggerId << (3*8))
+	triggerId = (data >> (13*8)) & 0xFFFF
+	argValue = data >> (9*8) & 0xFFFFFFFF
+	if globaldef.triggerMap.activateTrigger(triggerId, argValue):
+		return (10 << (15*8)) + (getMac() << (7*8)) + (triggerId << (5*8)) + (argValue << (1*8))
 	else:
 		return 15 << (15*8)
 
 def handleTrigger(data):
-	listenerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
-	try:
-		globaldef.handlerFunctions[listenerId-1]() #calling the listener function
-	except:
+	handlerId = (data & (0xFFFFFFFF << (11*8))) >> (11*8)
+	handlerFunc = globaldef.getHandlerFunction(handlerId)
+	if handlerFunc != None:
+		Thread(target = handlerFunc).start() #start the handler function in a new thread
+		return (13 << (15*8)) + (getMac() << (7*8)) + (listenerId << (5*8))
+	else:
 		return 15 << (15*8)
-	return (13 << (15*8)) + (getMac() << (7*8)) + (listenerId << (3*8))
 
 def doProcessing(data):
 	dataNum=stringToNum(data)
 	firstByte = (dataNum & (0xFF << (8*15))) >> (8*15)
 	
-	if firstByte == 1:
+	if firstByte == 1: #ok
 		answ = sendId()
-	elif firstByte == 3:
+	elif firstByte == 3: #ij
 		answ = initSetupMode()
 	elif firstByte == 4:
 		answ = startExec()
-	elif firstByte == 5:
+	elif firstByte == 5: #
 		answ = setArg(dataNum)
 	elif firstByte == 6:
 		answ = activateTrigger(dataNum)
