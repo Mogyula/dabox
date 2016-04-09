@@ -42,6 +42,7 @@ class TriggerMap:
 			for triggerDir in os.listdir("./triggers/"):
 				triggerId = int(triggerDir[0:triggerDir.find('_')])
 				triggerName = triggerDir[triggerDir.find('_')+1:]
+				#if there are no args, so the schema dir is empty...
 				if os.listdir("./triggers/"+triggerDir+"/schema/") == []:
 					f = open("./triggers/"+triggerDir+"/set/state")
 					state = int(f.readline())
@@ -51,6 +52,7 @@ class TriggerMap:
 					tr = Trigger(triggerId, triggerName, arg, bool(state))
 					self.schemas = self.schemas + (sch, )
 					self.triggers = self.triggers + (tr,)
+				#id there is an arg to it...
 				else:
 					sch = Schema(triggerId, triggerName, os.listdir("./triggers/"+triggerDir+"/schema/")[0])
 					self.schemas = self.schemas + (sch, )
@@ -69,9 +71,9 @@ class TriggerMap:
 								f.close()
 								arg = argVal#Argument(argName, argVal)
 						#we should check if that arg already exists.
-					if not self.triggerExists(triggerId, arg):
-						tr = Trigger(triggerId, triggerName, arg, bool(state))
-						self.triggers = self.triggers + (tr,)
+						if not self.triggerExists(triggerId, arg):
+							tr = Trigger(triggerId, triggerName, arg, bool(state))
+							self.triggers = self.triggers + (tr,)
 		except:
 			traceback.print_exc()
 			return 
@@ -214,6 +216,17 @@ class TriggerMap:
 			if trigger.name == triggerName and trigger.arg.val == argVal:
 				return True
 		return False
+		
+	def deleteArgs(self):
+		for schema in self.schemas:
+			if schema.argName != None:
+				for argDir in os.listdir("./triggers/"+str(schema.triggerId)+"_"+schema.triggerName+"/set/"):
+					shutil.rmtree("./triggers/"+str(schema.triggerId)+"_"+schema.triggerName+"/set/"+argDir)
+				
+	def onSetupMode(self):
+		self.deactivateAll()
+		self.deleteArgs()
+		self.readFolderStructure()
 
 triggerMap=TriggerMap()
 
@@ -221,11 +234,11 @@ def stopExec():
 	global inSetupMode
 	global runState
 	if not inSetupMode:
-		triggerMap.deactivateAll()
 		runState = False # this will block the main cycle
 		while not execStopped:
 			pass
 		inSetupMode = True
+		triggerMap.onSetupMode()
 		return True
 	return False
 		
