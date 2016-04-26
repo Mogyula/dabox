@@ -1,0 +1,73 @@
+The messages look like this in general:
+[COMMAND]	[DETAILS]
+	1.		  2.-16.  //byte order
+	
+The structure of the [DETAILS] part depends on the command before:
+
+a. When scanning for available devices:
+	1 --> "What are you?" //sent to a device
+		[1]		[0]
+		 1.	   2.-16. //byte order
+		
+	2 --> "I am..." //sent to the control box
+		[2]		[DEVICE_ID]	   [TYPE_ID]	  [0]
+		 1.	   	   2.-9.	    10.-13.	14.-16.
+
+b. During the setup process
+	3 --> "Fall to setup mode." //So fail-critical devices can prepare, and return tho their defaults, etc.
+		[3]		[0]
+		 1.	   2.-16.
+	4 --> "Start execution!" //So the uploaded args and stuff are in, we know which functions are live, etc.
+		[4]		[0]
+		 1.	   2.-16.
+	5 --> "Set argument value!" //We are setting an argument of a trigger function to a specified value.
+		[5]		[TRIGGER_ID]  [ARG_VALUE] 		 [0]
+		 1.		   2.-5.	   	  6.-9.	        10.-15.
+	6 --> "Activate a trigger." //We are marking a trigger function as active
+		[6]		[TRIGGER_ID]	[0]
+		 1.	   		2.-5.	  6.-16.
+	
+	----Acknowledging----
+		 
+	7 --> "Fell to setup mode."
+		[7]		[DEVICE_ID]		[0]
+		 1.	   		2.-9.	  10.-16.
+		 
+	8 --> "Started execution."
+		[8]		[DEVICE_ID]		[0]
+		 1.	   		2.-9.	  10.-16.
+		 
+	9 --> "Argument value has been set."
+		[9]		[DEVICE_ID]		[TRIGGER_ID]          [0]
+		 1.	   		2.-9.	  	   10.-13.			14.-16.
+		 
+	10 --> "Trigger has been activated."
+		[10]	[DEVICE_ID]		[TRIGGER_ID]	  [0]
+		 1.	   		2.-9.	  	   10.-13.		14.-16.
+		 
+c. Triggering.
+	11 --> "Triggering device."
+		[11]	[LISTENER_ID]	[0] 	//The listener of the device, of course.
+		 1.	   		2.-5.	   6.-16.
+
+	12 --> "Triggering da box."
+		[12]	[TRIGGER_ID]	   [ARG]  	      [0]
+		 1.	   		2.-5.	   		6.-7.       8.-16.
+
+	----Acknowledging----
+	
+	13 --> "Got your trigger /from the box./"
+		[13]	[DEVICE_ID]		[LISTENER_ID]	[0] 
+		 1.	   		2.-9.	   	   10.-13.	   14.-16.
+		 
+	14 --> "Got your trigger /from a device./"
+		[14]	[DEVICE_ID]		[TRIGGER_ID]	[0] 
+		 1.	   		2.-9.	   	   10.-13.	   14.-16.
+		 
+d. Error
+	15 --> "There was an error."
+		[15]	[0]
+		 1.	   2.-16.
+		 
+NOTES:
+The acknowledge messages contain the device ID, so we can check on da box, if it's IP has changed, and rearrange stuff if so.
