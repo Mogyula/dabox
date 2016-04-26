@@ -14,11 +14,12 @@ execStopped = True # we use this variable to wait for the main cycle to finish.
 inSetupMode = True
 
 class Trigger:
-	def __init__(self, triggerId, name, arg, state):
+	def __init__(self, triggerId, name, arg, argNo, state):
 		self.triggerId = triggerId
 		self.name = name
 		self.state = state
 		self.arg = arg #this will be None if there are no arguments
+		self.argNo = argNo
 		
 class Schema:
 	def __init__(self, triggerId, triggerName, argName):
@@ -31,11 +32,12 @@ class TriggerMap:
 		self.triggers = ()
 		self.schemas = ()
 		self.readFolderStructure()
+		print("INIT DONE")
 		
 	def readFolderStructure(self):
 		#This will also init the schemas.
 		#TODO program this in a structured way
-		#todo check if we are in programming mode!
+		#TODO check if we are in programming mode!
 		self.triggers = ()
 		self.schemas = ()
 		try:
@@ -49,10 +51,10 @@ class TriggerMap:
 					f.close()
 					arg = None
 					sch = Schema(triggerId, triggerName, None)
-					tr = Trigger(triggerId, triggerName, arg, bool(state))
+					tr = Trigger(triggerId, triggerName, arg, None, bool(state))
 					self.schemas = self.schemas + (sch, )
 					self.triggers = self.triggers + (tr,)
-				#id there is an arg to it...
+				#if there is an arg to it...
 				else:
 					sch = Schema(triggerId, triggerName, os.listdir("./triggers/"+triggerDir+"/schema/")[0])
 					self.schemas = self.schemas + (sch, )
@@ -72,7 +74,7 @@ class TriggerMap:
 								arg = argVal#Argument(argName, argVal)
 						#we should check if that arg already exists.
 						if not self.triggerExists(triggerId, arg):
-							tr = Trigger(triggerId, triggerName, arg, bool(state))
+							tr = Trigger(triggerId, triggerName, arg, int(preset), bool(state))
 							self.triggers = self.triggers + (tr,)
 		except:
 			traceback.print_exc()
@@ -85,7 +87,7 @@ class TriggerMap:
 					return trigger
 		else:
 			for trigger in self.triggers:
-				if trigger.triggerId == triggerId and trigger.arg.val == triggerVal:
+				if trigger.triggerId == triggerId and trigger.arg == triggerVal:
 					return trigger
 			
 	def getSchema(self, triggerId): 
@@ -101,30 +103,30 @@ class TriggerMap:
 			trigger.state = False
 			
 	def activateTrigger(self, triggerId, triggerVal):
-		#we should check if the trigger has arg.
-		#TODO: check if we are in programming mode
-		sch = self.getSchema(triggerId)
-		try:
-			if self.triggerExists(triggerId, triggerVal): #that would mean, it must exist in order to activate it...
-				if sch.argName == None: #so it has no args after all
-					f=open("./triggers/"+str(triggerId)+"_"+sch.triggerName+"/set/state","w")
-				else: #so it has an argument
-					f=open("./triggers/"+str(triggerId)+"_"+sch.triggerName+"/set/"+str(countVariants(triggerId)+1)+"/state","w")
-				f.write("1")
-				f.close()
-				self.getTrigger(triggerId, triggerVal).state = True
-				return True
-		except:
-			traceback.print_exc()
-			return False
-			
+		if inSetupMode:
+			if self.triggerExists(triggerId, triggerVal):
+				try:					
+					sch = self.getSchema(triggerId)
+					if sch.argName == None: #so it has no args after all
+						f=open("./triggers/"+str(triggerId)+"_"+sch.triggerName+"/set/state","w")
+					else: #so it has an argument
+						f=open("./triggers/"+str(triggerId)+"_"+sch.triggerName+"/set/"+str(self.getArgNo(triggerId, triggerVal))+"/state","w")
+					f.write("1")
+					f.close()
+					self.getTrigger(triggerId, triggerVal).state = True
+					return True
+				except:
+					traceback.print_exc()
+					return False
+		return False
+		
 	def setArg(self, triggerId, argValue):
-		#TODO: enclose this in a try-except block.
-		try:			
-			sch = self.getSchema(triggerId)
-			#should we check if it's the same as in the scheme?
-			#we should create the files and then init the whole thing.
-			if inSetupMode:
+		if inSetupMode:
+			#TODO: enclose this in a try-except block.
+			try:			
+				sch = self.getSchema(triggerId)
+				#should we check if it's the same as in the scheme?
+				#we should create the files and then init the whole thing.
 				#we gotta check 
 				if not self.triggerHasArg(triggerId):
 					return False #in this case, the trigger has no arg
@@ -141,14 +143,15 @@ class TriggerMap:
 						
 						#we have to add it to the triggers if it doesn't exist
 						
-						tr = Trigger(triggerId, self.getTriggerName(triggerId), argValue, False)
+						tr = Trigger(triggerId, self.getTriggerName(triggerId), argValue, self.countVariants(triggerId)+1,False)
 						self.triggers = self.triggers + (tr,)
 						
 						return True
+					return False
+			except Exception, ex:
+				traceback.print_exc() #TODO handle every exception somewhat like this
 				return False
-		except Exception, ex:
-			traceback.print_exc() #TODO handle every exception somewhat like this
-			return False
+		return False
 		
 	def triggerHasArg(self, triggerId):
 		if self.getSchema(triggerId).argName == None:
@@ -161,6 +164,13 @@ class TriggerMap:
 			if trigger.triggerId == triggerId:
 				cnt = cnt +1
 		return cnt
+		
+	def getArgNo(self, triggerId, argValue):
+		print "GIVEN ID AND VALUE: ", triggerId, ", ", argValue
+		for trigger in self.triggers:
+			print "CURRENT TRIGGER ARG: ", trigger.arg, " name: ", trigger.name, " triggerId: ", trigger.triggerId, " argNo: ", trigger.argNo
+			if trigger.triggerId == triggerId and trigger.arg == argValue:
+				return trigger.argNo
 
 	def deactivateAll(self):
 		for trigger in self.triggers:
@@ -187,10 +197,10 @@ class TriggerMap:
 	def triggerExists(self, triggerId, argValue):
 		#so first we gonna check if the trigger has an arg.
 		schema = self.getSchema(triggerId)
+		print schema.argName
 		if schema != None:
 			if schema.argName != None:
 				for trigger in self.triggers:
-					print trigger
 					if trigger.triggerId == triggerId and trigger.arg == argValue:
 						return True
 			else:
